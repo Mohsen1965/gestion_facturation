@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Supprimer TVA</h2>
+
+<!-- tva/templates/tva/confirm_delete.html -->
+
+<form method="post">
+    {% csrf_token %}
+    <p>Êtes-vous sûr de vouloir supprimer la TVA "{{ tva.taux_tva }}" ?</p>
+    <button type="submit" class="btn btn-danger">Supprimer</button>
+    <a href="{% url 'list_tva' %}" class="btn btn-success">Annuler</a>
+</form>
+
+{% endblock %}

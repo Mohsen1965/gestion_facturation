@@ -1,0 +1,497 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 style="color: rgb(139, 85, 126);" class="font-weight-bold">Nouveau Devis</h2>
+
+<form method="POST" action="{% url 'create_devis' %}">
+    {% csrf_token %}
+    <div class="form-group form-inline" style="margin-bottom: 2px;">
+        <label for="{{ form.numero_devis.id_for_label }}" class="mr-2 font-weight-bold">
+            {{ form.numero_devis.label }}
+        </label>
+        <div>
+            {{ form.numero_devis }}
+            {% for error in form.numero_devis.errors %}
+                <div class="alert alert-danger ml-2">{{ error }}</div>
+            {% endfor %}
+        </div>
+    
+        <span class="ml-4"></span>
+    
+        <label for="{{ form.date_devis.id_for_label }}" class="mr-2 font-weight-bold">
+            {{ form.date_devis.label }}
+        </label>
+        <div style="width: 20%;">
+            {{ form.date_devis }}
+            {% for error in form.date_devis.errors %}
+                <div class="alert alert-danger ml-2">{{ error }}</div>
+            {% endfor %}
+        </div>
+    
+        <span class="ml-4"></span>
+    </div>
+    <div class="form-group form-inline" style="margin-bottom: 2px;">
+        <label for="{{ form.client.id_for_label }}" class="mr-2 font-weight-bold">
+            {{ form.client.label }}
+        </label>
+        <div> <!-- Utilisation de flex-grow pour agrandir le champ -->
+            {{ form.client }}
+            {% for error in form.client.errors %}
+                <div class="alert alert-danger ml-2">{{ error }}</div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="form-group row justify-content-end align-items-center" style="margin-bottom: 2px;">
+            <label class="font-weight-bold col-2" for="id_total_ht" style="text-align: right;">Total HT:</label>
+            <div class="col-4">
+                <input id="id_total_ht" name="total_ht" class="form-control" readonly style="margin-bottom: 0;">
+            </div>
+        </div>
+    
+        <div class="form-group row justify-content-end align-items-center" style="margin-bottom: 2px;">
+            <label class="font-weight-bold col-2" for="id_total_remise" style="text-align: right;">Total Remise:</label>
+            <div class="col-4">
+                <input type="text" id="id_total_remise" name="total_remise" class="form-control" readonly style="margin-bottom: 0;">
+            </div>
+        </div>
+    
+        <div class="form-group row justify-content-end align-items-center" style="margin-bottom: 2px;">
+            <label class="font-weight-bold col-2" for="id_total_tva" style="text-align: right;">Total TVA:</label>
+            <div class="col-4">
+                <input type="text" id="id_total_tva" name="total_tva" class="form-control" readonly style="margin-bottom: 0;">
+            </div>
+        </div>
+    
+        <div class="form-group row justify-content-end align-items-center" style="margin-bottom: 2px;">
+            <label class="font-weight-bold col-2" for="id_total_ttc" style="text-align: right;">Total TTC:</label>
+            <div class="col-4">
+                <input type="text" id="id_total_ttc" name="total_ttc" class="form-control" readonly style="margin-bottom: 0;">
+            </div>
+        </div>
+    
+        <div class="form-group" style="margin-bottom: 2px;">
+            <label class="font-weight-bold">{{ form.etat.label }}</label>
+            <div class="d-flex">
+                {% for radio in form.etat %}
+                    <div class="form-check mr-3">
+                        {{ radio.tag }}
+                        <label class="form-check-label" for="{{ radio.id_for_label }}">
+                            {{ radio.choice_label }}
+                        </label>
+                    </div>
+                {% endfor %}
+            </div>
+            {% for error in form.etat.errors %}
+                <div class="alert alert-danger ml-2 mb-0">{{ error }}</div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    
+
+    {{ formset.management_form }}
+
+    <table id="invoice-lines-table" style="font-size: 12px; width: 100%;">
+        <thead style="background-color:green; color: #FFFFFF;">
+            <tr>
+                <th style="width: 24%;">Article</th>
+                <th style="width: 8%;">Qte</th>
+                <th style="width: 8%;">P. Unit.</th>
+                <th style="width: 8%;">Rem.%</th>
+                <th style="width: 12%;">Mont.Net HT</th>
+                <th style="width: 12%;">Mont. TVA</th>
+                <th style="width: 12%;">Mont. TTC</th>
+                <th style="width: 8%;">TVA %</th>
+                <th style="width: 8%;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for form in formset %}
+                <tr id="line_{{ forloop.counter0 }}">
+                    <td>{{ form.article }}</td>
+                    <td>
+                        <input 
+                            type="number" 
+                            id="quantite_{{ forloop.counter0 }}" 
+                            name="form-{{ forloop.counter0 }}-quantite" 
+                            value="0" 
+                            oninput="calculateMontants('{{ forloop.counter0 }}');" 
+                            style="width: 100%; max-width: 80px;"
+                        />
+                    </td>
+                    <td>
+                        <input 
+                            type="number" 
+                            id="prix_unitaire_{{ forloop.counter0 }}" 
+                            name="form-{{ forloop.counter0 }}-prix_unitaire" 
+                            value="0" 
+                            readonly 
+                            style="width: 100%; max-width: 80px;"
+                        />
+                    </td>
+                    <td>
+                        <input 
+                            type="number" 
+                            id="taux_remise_{{ forloop.counter0 }}" 
+                            name="form-{{ forloop.counter0 }}-taux_remise" 
+                            value="0" 
+                            oninput="calculateMontants('{{ forloop.counter0 }}');" 
+                            style="width: 100%; max-width: 80px;"
+                        />
+                    </td>
+                    <td>
+                        <input 
+                            type="number" 
+                            id="montant_ht_{{ forloop.counter0 }}" 
+                            name="form-{{ forloop.counter0 }}-montant_ht" 
+                            readonly 
+                            value="0.000" 
+                            style="width: 100%; max-width: 120px;"
+                        />
+                    </td>
+                    <td>
+                        <input 
+                            type="number" 
+                            id="montant_tva_{{ forloop.counter0 }}" 
+                            name="form-{{ forloop.counter0 }}-montant_tva" 
+                            readonly 
+                            value="0.000" 
+                            style="width: 100%; max-width: 120px;"
+                        />
+                    </td>
+                    <td>
+                        <input 
+                            type="number" 
+                            id="montant_ttc_{{ forloop.counter0 }}" 
+                            name="form-{{ forloop.counter0 }}-montant_ttc" 
+                            readonly 
+                            value="0.000" 
+                            style="width: 100%; max-width: 120px;"
+                        />
+                    </td>
+                    <td>
+                        <input 
+                            type="number" 
+                            id="taux_tva_{{ forloop.counter0 }}" 
+                            name="form-{{ forloop.counter0 }}-taux_tva" 
+                            value="20" 
+                            oninput="calculateMontants('{{ forloop.counter0 }}');" 
+                            style="width: 100%; max-width: 80px;"
+                        />
+                    </td>
+                    <td style="text-align: center; vertical-align: middle;">
+                        <button type="button" class="remove-line" onclick="removeLine(this)" style="font-size: 12px; color: red;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>                   
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+
+    <input type="hidden" name="form-TOTAL_FORMS" id="id_form-TOTAL_FORMS" value="{{ formset.total_form_count }}">
+    <button class="btn btn-primary" type="button" id="add-line-btn">Add Line</button>
+    <button class="btn btn-success" type="submit">Enregistrer</button>
+    <a href="{% url 'list_devis' %}" class="btn btn-danger">Liste des devis</a>
+
+</form>
+
+{% if form.errors %}
+    <ul>
+        {% for field, errors in form.errors.items %}
+            <li>{{ field }}: {{ errors|join:", " }}</li>
+        {% endfor %}
+    </ul>
+{% endif %}
+
+{% if formset.non_field_errors %}
+    <ul>
+        {% for error in formset.non_field_errors %}
+            <li>{{ error }}</li>
+        {% endfor %}
+    </ul>
+{% endif %}
+
+
+
+
+<script>
+ 
+ 
+ let lineCounter = parseInt('{{ formset.total_form_count }}'); // Initial count based on existing lines
+
+// Function to add a new line
+document.getElementById('add-line-btn').addEventListener('click', function() {
+    let table = document.getElementById('invoice-lines-table').getElementsByTagName('tbody')[0];
+    let newRow = document.createElement('tr');
+    newRow.id = `line_${lineCounter}`;
+
+    // Copy article options
+    let articleOptions = document.querySelector('select[name$="-article"]').innerHTML; // Get options from the first 'article' field
+
+    // Template for a new line with reduced font-size
+    newRow.innerHTML = `
+    <td>
+        <select name="form-${lineCounter}-article" class="article-select" style=" height: 25px; width :100%; font-size: 12px;">
+            ${articleOptions}
+        </select>
+    </td>
+    <td><input type="number" id="quantite_${lineCounter}" name="form-${lineCounter}-quantite" style="width: 100%; font-size: 12px;" value="0" oninput="calculateMontants(${lineCounter});" /></td>
+    <td><input type="number" id="prix_unitaire_${lineCounter}" name="form-${lineCounter}-prix_unitaire" style="width: 100%; font-size: 12px;" value="0" readonly /></td>
+    <td><input type="number" id="taux_remise_${lineCounter}" name="form-${lineCounter}-taux_remise" style="width: 100%; max-width: 80px; font-size: 12px;" value="0" oninput="calculateMontants(${lineCounter});" /></td>
+    <td><input type="number" id="montant_ht_${lineCounter}" name="form-${lineCounter}-montant_ht" readonly style="width: 100%; font-size: 12px;" value="0.000" /></td>
+    <td><input type="number" id="montant_tva_${lineCounter}" name="form-${lineCounter}-montant_tva" readonly style="width: 100%; font-size: 12px;" value="0.000" /></td>
+    <td><input type="number" id="montant_ttc_${lineCounter}" name="form-${lineCounter}-montant_ttc" readonly style="width: 100%; font-size: 12px;" value="0.000" /></td>
+    <td><input type="number" id="taux_tva_${lineCounter}" name="form-${lineCounter}-taux_tva" style="width: 100%; font-size: 12px;" value="20" oninput="calculateMontants(${lineCounter});" /></td>
+    <td style="text-align: center; vertical-align: middle;">
+        <button type="button" class="remove-line" onclick="removeLine(this)" style="font-size: 12px; color: red;">
+            <i class="fas fa-trash"></i>
+        </button>
+    </td>
+`;
+
+    // Add the new row to the table
+    table.appendChild(newRow);
+
+    // Update total form count
+    document.getElementById('id_form-TOTAL_FORMS').value = lineCounter + 1;
+
+    // Increment the line counter
+    lineCounter++;
+
+    // Add event listener for the new article select
+    const newArticleSelect = newRow.querySelector('.article-select');
+    newArticleSelect.addEventListener('change', function() {
+        let rowId = newRow.id.split('_')[1];  // Extract row index from the new row ID
+        let articleId = this.value;  // Get the selected article's ID
+
+        console.log('Selected articleId:', articleId); // Log articleId to the console
+
+        if (articleId) {
+            // Make AJAX request to fetch the price for the selected article
+            fetch(`/devis/get-prix-unitaire/${articleId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data); // Log the data for debugging
+                    if (data.prix_unitaire) {
+                        document.getElementById(`prix_unitaire_${rowId}`).value = data.prix_unitaire;
+                        calculateMontants(rowId);  // Recalculate the amounts when the price is updated
+                    } else {
+                        console.error(data.error);
+                    }
+                })
+                .catch(error => console.error('Error fetching price:', error));
+
+                fetch(`/devis/get-taux_tva/${articleId}/`)
+                .then(response => {
+                    console.log(response); // Log the response for debugging
+                    return response.json();
+                })
+                .then(data => {
+                    console.log(data); // Log the data for debugging
+                    if (data.taux_tva) {
+                        document.getElementById(`taux_tva_${rowId}`).value = data.taux_tva;
+                        calculateMontants(rowId);  // Recalculate the amounts when the price is updated
+                    } else {
+                        console.error(data.error);
+                    }
+                })
+                .catch(error => console.error('Error fetching price:', error));
+        }
+    });
+});
+
+
+
+
+
+// Function to remove a line
+function removeLine(button) {
+    // Supprime la ligne du tableau
+    button.closest('tr').remove();
+    
+    // Met à jour le compteur de lignes
+    lineCounter--;
+    
+    // Met à jour le champ TOTAL_FORMS
+    document.getElementById('id_form-TOTAL_FORMS').value = lineCounter;
+    
+    // Recalcule les totaux après la suppression
+    calculateTotalAmounts();
+}
+
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listener to the article select fields
+    document.querySelectorAll('select[name$="-article"]').forEach(function(select) {
+    select.addEventListener('change', function() {
+        let rowId = this.name.match(/\d+/)[0];  // Extract row index from the name attribute
+        let articleId = this.value;  // Get the selected article's ID
+
+        console.log('Selected articleId:', articleId); // Log articleId to the console
+
+        if (articleId) {
+            // Make AJAX request to fetch the price for the selected article
+            fetch(`/devis/get-prix-unitaire/${articleId}/`)
+                .then(response => {
+                    console.log(response); // Log the response for debugging
+                    return response.json();
+                })
+                .then(data => {
+                    console.log(data); // Log the data for debugging
+                    if (data.prix_unitaire) {
+                        document.getElementById(`prix_unitaire_${rowId}`).value = data.prix_unitaire;
+                        calculateMontants(rowId);  // Recalculate the amounts when the price is updated
+                    } else {
+                        console.error(data.error);
+                    }
+                })
+                .catch(error => console.error('Error fetching price:', error));
+
+
+                fetch(`/devis/get-taux_tva/${articleId}/`)
+                .then(response => {
+                    console.log(response); // Log the response for debugging
+                    return response.json();
+                })
+                .then(data => {
+                    console.log(data); // Log the data for debugging
+                    if (data.taux_tva) {
+                        document.getElementById(`taux_tva_${rowId}`).value = data.taux_tva;
+                        calculateMontants(rowId);  // Recalculate the amounts when the price is updated
+                    } else {
+                        console.error(data.error);
+                    }
+                })
+                .catch(error => console.error('Error fetching price:', error));
+        }
+    });
+});
+
+});
+
+
+function fetchPrixUnitaire(articleId) {
+    fetch(`/devis/get-prix-unitaire/${articleId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.prix_unitaire) {
+                // Assume you have an input with ID 'prix_unitaire_input' to show the unit price
+                document.getElementById('prix_unitaire_input').value = data.prix_unitaire;
+            } else {
+                console.error(data.error);
+            }
+        })
+        .catch(error => console.error('Error fetching price:', error));
+}
+
+
+function fetchTauxTva(articleId) {
+    fetch(`/devis/get-taux_tva/${articleId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.taux_tva) {
+                // Assume you have an input with ID 'prix_unitaire_input' to show the unit price
+                document.getElementById('taux_tva_input').value = data.taux_tva;
+            } else {
+                console.error(data.error);
+            }
+        })
+        .catch(error => console.error('Error fetching price:', error));
+}
+
+function calculateMontants(row) {
+    let quantite = parseFloat(document.getElementById(`quantite_${row}`).value) || 0;
+    let prixUnitaire = parseFloat(document.getElementById(`prix_unitaire_${row}`).value) || 0;
+    let tauxRemise = parseFloat(document.getElementById(`taux_remise_${row}`).value) || 0;
+    let tauxTva = parseFloat(document.getElementById(`taux_tva_${row}`).value) || 0;
+
+    let montantHT = quantite * prixUnitaire * (1 - tauxRemise / 100);
+    montantHT = montantHT.toFixed(3);
+
+    let montantotal_tva = montantHT * (tauxTva / 100);
+    montantotal_tva = montantotal_tva.toFixed(3);
+
+    let montantTTC = parseFloat(montantHT) + parseFloat(montantotal_tva);
+    montantTTC = montantTTC.toFixed(3);
+
+    document.getElementById(`montant_ht_${row}`).value = montantHT;
+    document.getElementById(`montant_tva_${row}`).value = montantotal_tva;
+    document.getElementById(`montant_ttc_${row}`).value = montantTTC;
+
+    // Calculer le montant de la remise pour cette ligne
+    let montantRemise = quantite * prixUnitaire * (tauxRemise / 100);
+
+    console.log("Montant Remise pour cette ligne:", montantRemise); // Ajoutez ceci
+
+
+    // Mettre à jour le total de la remise
+    updateTotalRemise(montantRemise);
+
+    // Mettre à jour les totaux de la devis
+    calculateTotalAmounts();
+}
+
+
+function updateTotalRemise(montantRemise) {
+    let totalRemise = parseFloat(document.getElementById('id_total_remise').value) || 0;
+    console.log("Montant de la remise pour cette ligne:", montantRemise); // Débogage
+    totalRemise += montantRemise;
+    document.getElementById('id_total_remise').value = totalRemise.toFixed(2);
+    console.log("Montant de la remise pour cette ligne:", montantRemise);
+    console.log("Total Remise mis à jour:", totalRemise);
+}
+
+function calculateTotalAmounts() {
+    let totalHT = 0;
+    let totalTVA = 0;
+    let totalTTC = 0;
+    let totalRemise = 0;
+
+    document.querySelectorAll('tbody tr').forEach(function(row) {
+        let montantHTField = row.querySelector('input[name$="montant_ht"]');
+        let montantotal_tvaField = row.querySelector('input[name$="montant_tva"]');
+        let montantTTCField = row.querySelector('input[name$="montant_ttc"]');
+        let tauxRemiseField = row.querySelector('input[name$="taux_remise"]');
+
+        let montantHT = montantHTField ? parseFloat(montantHTField.value) || 0 : 0;
+        let montantotal_tva = montantotal_tvaField ? parseFloat(montantotal_tvaField.value) || 0 : 0;
+        let montantTTC = montantTTCField ? parseFloat(montantTTCField.value) || 0 : 0;
+        let tauxRemise = tauxRemiseField ? parseFloat(tauxRemiseField.value) || 0 : 0;
+
+        totalHT += montantHT;
+        totalTVA += montantotal_tva;
+        totalTTC += montantTTC;
+
+        // Calculer le montant de la remise pour cette ligne
+        totalRemise += (montantHT * (tauxRemise / 100));
+
+    });
+
+    document.getElementById('id_total_ht').value = totalHT.toFixed(3);
+    document.getElementById('id_total_remise').value = totalRemise.toFixed(3);
+    document.getElementById('id_total_tva').value = totalTVA.toFixed(3);
+    document.getElementById('id_total_ttc').value = totalTTC.toFixed(3);
+
+    if (!quantite || !prixUnitaire || !tauxRemise) {
+    console.error("One of the required fields is empty:", {quantite, prixUnitaire, tauxRemise});
+}
+
+}
+
+
+document.querySelector('form').addEventListener('submit', function(e) {
+    let formData = new FormData(this);
+    for (let [key, value] of formData.entries()) {
+        console.log(key, value); // Log key-value pairs
+    }
+});
+
+
+
+</script>
+{% endblock %}

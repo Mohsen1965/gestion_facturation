@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block title %}Détails du Client{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 style="color:rgb(6, 125, 146)" class="font-weight-bold">Détails du Client : {{ client.nom }}</h2>
+    <p><strong>Code Client :</strong> {{ client.code_client }}</p>
+    <p><strong>Adresse :</strong> {{ client.adresse }}</p>
+    <p><strong>Email :</strong> {{ client.email }}</p>
+    <p><strong>Téléphone :</strong> {{ client.telephone }}</p>
+
+    <a href="{% url 'list_clients' %}" class="btn btn-danger">Retour à la liste des clients</a>
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block title %}Détails de l'Article{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 style="color:rgb(6, 125, 146)" class="font-weight-bold">Détails de l'Article : {{ article.nom }}</h2>
+    <p><strong>Code Article :</strong> {{ article.code_article }}</p>
+    <p><strong>Nom :</strong> {{ article.nom }}</p>
+   
+    <p><strong>Description :</strong> {{ article.description }}</p>
+    <p><strong>Prix Unitaire :</strong> {{ article.prix_unitaire }}</p>
+    <p><strong>Stock :</strong> {{ article.stock }}</p>
+    <p><strong>Catégorie :</strong> {{ article.categorie.nom }}</p>
+    <p><strong>TVA :</strong> {{ article.tva.taux_tva }}%</p>
+
+    <a href="{% url 'list_articles' %}" class="btn btn-danger">Retour à la liste des articles</a>
+</div>
+{% endblock %}

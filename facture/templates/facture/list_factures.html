@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+
+{% block title %}Liste des Factures{% endblock %}
+
+{% block content %}
+
+<!-- Bouton pour ouvrir le formulaire d'ajout de facture -->
+<a href="{% url 'create_facture' %}" class="btn btn-primary mb-3 btn-icon">
+    <i class="fas fa-plus"></i> Facture
+</a>
+
+<!-- Formulaire de suppression des factures sélectionnées -->
+<form id="deleteSelectedForm" method="POST" action="{% url 'delete_factures' %}" style="display: inline;">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger mb-3 btn-icon">
+        <i class="fas fa-trash"></i> Supprimer Sélectionnées
+    </button>
+    <input type="hidden" id="selectedFactures" name="selected_factures">
+</form>
+
+<div class="table-responsive" style="font-size: 8pt; font-family: Verdana, sans-serif;">
+    <table id="factureTable" class="table table-striped" style="border-collapse: collapse; width: 100%;">
+        <thead style="background-color:green; color: #FFFFFF; font-size: 12pt; font-weight: bold;">
+            <tr>
+                <th style="padding: 5px; height: 40px; width: 30px;">
+                    <input type="checkbox" id="selectAll" title="Tout sélectionner" />
+                </th>           
+                <th style="padding: 5px; height: 40px;">No</th>
+                <th style="padding: 5px; height: 40px;">Date</th>
+                <th style="padding: 5px; height: 40px;">Client</th>
+                <th style="padding: 5px; height: 40px;">Tot. HT</th>
+                <th style="padding: 5px; height: 40px;">Tot. TVA</th>
+                <th style="padding: 5px; height: 40px;">Tot. TTC</th>
+                <th style="padding: 5px; height: 40px;">État</th>
+                <th style="padding: 5px; height: 40px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for facture in factures %}
+            <tr style="border-bottom: 1px solid #ccc;">
+                <td style="padding: 1px; text-align: center;">
+                    <input type="checkbox" name="selected_factures" value="{{ facture.id }}" />
+                </td>
+                <td style="padding: 1px;">{{ facture.numero_facture }}</td>
+                <td style="padding: 1px;">{{ facture.date_facture }}</td>
+                <td style="padding: 1px;">{{ facture.client.nom }}</td>
+                <td style="padding: 1px;">{{ facture.total_ht }}</td>
+                <td style="padding: 1px;">{{ facture.total_tva }}</td>
+                <td style="padding: 1px;">{{ facture.total_ttc }}</td>
+                <td style="padding: 1px;">{{ facture.etat }}</td>
+                <td style="padding: 1px;">
+                    <!-- Bouton Afficher -->
+                    <a href="{% url 'afficher_facture' facture.id %}" style="color: blue; text-decoration: none; font-size: 12pt;">
+                        <i class="fas fa-eye"></i> 
+                    </a>
+                    <!-- Bouton Modifier -->
+                    <a href="{% url 'modifier_facture' facture.id %}" style="color: orange; text-decoration: none; font-size: 12pt;">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <!-- Bouton Supprimer avec confirmation -->
+                    <a href="{% url 'delete_facture' facture.id %}" style="color: red; text-decoration: none; font-size: 12pt;">
+                        <i class="fas fa-trash"></i>
+                    </a>
+                    <!-- Bouton Télécharger PDF -->
+                    <a href="{% url 'generate_facture_pdf' facture.id %}" style="color: Purple; text-decoration: none; font-size: 12pt;">
+                        <i class="fas fa-file-pdf"></i>
+                    </a>
+                  
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="text-center">Aucune facture trouvée.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // Gestion de la case à cocher "Tout sélectionner" pour les factures
+    document.getElementById('selectAll').addEventListener('change', function () {
+        const isChecked = this.checked;
+        const checkboxes = document.querySelectorAll('input[name="selected_factures"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = isChecked;
+        });
+    });
+    
+    document.addEventListener('DOMContentLoaded', function () {
+        const deleteForm = document.getElementById('deleteSelectedForm');
+        
+        // Suppression des factures sélectionnées (plusieurs factures)
+        deleteForm.addEventListener('submit', function (event) {
+            event.preventDefault();  // Empêche l'envoi par défaut du formulaire
+            
+            const selected = Array.from(document.querySelectorAll('input[name="selected_factures"]:checked'))
+                .map(checkbox => checkbox.value);  // Récupère les IDs des factures sélectionnées
+    
+            if (selected.length === 0) {
+                alert('Veuillez sélectionner au moins une facture.');
+                return;
+            }
+    
+            // Définit la valeur du champ caché avec la liste des IDs des factures
+            document.getElementById('selectedFactures').value = selected.join(',');
+    
+            // Envoi de la requête POST avec Fetch API
+            fetch(deleteForm.action, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: new URLSearchParams(new FormData(deleteForm)).toString()
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);  // Affiche le message de succès
+                    window.location.href = '/factures/';  // Redirige vers la page de la liste des factures
+                } else {
+                    alert(data.message);  // Affiche le message d'erreur ou d'avertissement
+                }
+            })
+            .catch(error => {
+                alert('Une erreur est survenue. Veuillez réessayer.');
+                console.error('Erreur:', error);
+            });
+        });
+    
+        // Suppression d'une seule facture via le bouton "delete-btn"
+        const deleteButtons = document.querySelectorAll('.delete-btn');
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                const selectedId = this.dataset.id;  // Récupère l'ID de la facture
+    
+                if (confirm("Êtes-vous sûr de vouloir supprimer cette facture ?")) {
+                    fetch('/factures/delete/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken'), // CSRF token pour la requête sécurisée
+                        },
+                        body: JSON.stringify({ selected_factures: selectedId })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            alert(data.message);
+                            window.location.href = '/factures/';  // Redirige vers la page de la liste des factures
+                        } else {
+                            alert(data.message);
+                        }
+                    })
+                    .catch(error => console.error('Erreur:', error));
+                }
+            });
+        });
+    
+        // Fonction pour obtenir le CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+</script>
+
+{% endblock %}

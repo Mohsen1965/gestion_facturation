@@ -1,0 +1,75 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}My Site{% endblock %}</title>
+    <!-- Bootstrap CSS from CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    {% block css %}{% endblock %}
+</head>
+<body>
+    <!-- Main Header -->
+    <header class="bg-dark text-white p-3 text-center">
+        <h1>My Site</h1>
+    </header>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar Navigation -->
+            <nav class="col-md-3 col-lg-2 bg-light p-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'list_clients' %}">Clients</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'list_articles' %}">Articles</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'list_clients' %}">Categorie Articles</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'list_clients' %}">TVA</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'list_clients' %}">Facture</a>
+                    </li>
+                    <!-- Add more navigation items here -->
+                </ul>
+            </nav>
+
+            <!-- Main Content Section -->
+            <section class="col-md-9 col-lg-10 p-4">
+                <!-- Section Header -->
+                <header class="bg-secondary text-white p-3 text-center mb-3">
+                    <h2>Section Header</h2>
+                </header>
+
+                <!-- Main Article -->
+                <article class="bg-light p-4">
+                    {% block content %}
+                    <!-- Page specific content will go here -->
+                    {% endblock %}
+                </article>
+
+                <!-- Section Footer -->
+                <footer class="bg-secondary text-white p-3 text-center mt-3">
+                    Section Footer
+                </footer>
+            </section>
+        </div>
+    </div>
+
+    <!-- Main Footer -->
+    <footer class="bg-dark text-white p-3 text-center">
+        <p>&copy; 2024 My Site</p>
+    </footer>
+
+    <!-- jQuery and Bootstrap JS from CDN -->
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% block js %}{% endblock %}
+</body>
+</html>

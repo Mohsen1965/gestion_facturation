@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+
+{% block title %}Liste des Catégories{% endblock %}
+
+{% block content %}
+
+<!-- Bouton pour ouvrir le modal d'ajout -->
+<button type="button" class="btn btn-primary mb-3 btn-icon" data-toggle="modal" data-target="#createcategorieModal">
+    <i class="fas fa-plus"></i> Catégorie
+</button>
+
+<div class="table-responsive">
+    <table id="categoriesTable" class="table table-striped">
+        <thead style="background-color:green ; color: #FFFFFF;">
+            <tr>
+                <th>ID</th>
+                <th>Nom</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for categorie in categories %}
+            <tr>
+                <td>{{ categorie.id }}</td>
+                <td>{{ categorie.nom }}</td>
+                <td>
+                    <!-- Bouton pour afficher le modal d'édition -->
+                    <button type="button" class="btn btn-sm btn-icon" style="background: none; border: none; padding: 0; cursor: pointer;" data-toggle="modal" data-target="#updatecategorieModal{{ categorie.pk }}">
+                        <i class="fas fa-edit" style="font-size: 20px; color: green;"></i>
+                    </button>
+
+                    <!-- Modal pour afficher les détails d'une catégorie -->
+                    <button type="button" class="btn btn-sm btn-icon" style="background: none; border: none; padding: 0; cursor: pointer;" data-toggle="modal" data-target="#viewcategorieModal{{ categorie.pk }}">
+                        <i class="fas fa-eye" style="font-size: 20px; color: blue;"></i>
+                    </button>
+                    
+                    <div class="modal fade" id="viewcategorieModal{{ categorie.pk }}" tabindex="-1" role="dialog" aria-labelledby="viewcategorieModalLabel{{ categorie.pk }}" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="viewcategorieModalLabel{{ categorie.pk }}">Détails de la Catégorie</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <p><strong>ID :</strong> {{ categorie.id }}</p>
+                                    <p><strong>Nom :</strong> {{ categorie.nom }}</p>
+                                    <!-- Ajoute d'autres détails si nécessaire -->
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal pour éditer une catégorie -->
+                    <div class="modal fade" id="updatecategorieModal{{ categorie.pk }}" tabindex="-1" role="dialog" aria-labelledby="updatecategorieModalLabel{{ categorie.pk }}" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" style="color: #dc3545;font-weight: bold" id="updatecategorieModalLabel{{ categorie.pk }}">Éditer Catégorie</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <!-- Formulaire de mise à jour de la catégorie -->
+                                    <form method="POST" action="{% url 'update_categorie' categorie.pk %}">
+                                        {% csrf_token %}
+                                        <div class="form-group row">
+                                            <label for="nom" class="col-sm-3 col-form-label font-weight-bold">Nom</label>
+                                            <div class="col-sm-9">
+                                                <input type="text" class="form-control" id="nom" name="nom" value="{{ categorie.nom }}" required>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="submit" class="btn btn-primary">Mettre à jour</button>
+                                            <button type="button" class="btn btn-danger" data-dismiss="modal">Annuler</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lien pour supprimer une catégorie -->
+                    <a href="{% url 'delete_categorie' categorie.pk %}" class="btn btn-sm btn-icon" style="background: none; border: none; padding: 0; cursor: pointer;">
+                        <i class="fas fa-trash-alt" style="font-size: 20px; color: #dc3545;"></i>
+                    </a>
+
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" class="text-center">Aucune catégorie trouvée.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal pour ajouter une nouvelle catégorie -->
+<div class="modal fade" id="createcategorieModal" tabindex="-1" role="dialog" aria-labelledby="createcategorieModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createcategorieModalLabel" style="color: #dc3545; font-weight: bold">Ajouter une Catégorie</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Formulaire de création de catégorie -->
+                <form id="categorieForm" method="POST" action="{% url 'create_categorie' %}">
+                    {% csrf_token %}
+                    <div class="form-group row">
+                        <label for="nom" class="col-sm-3 col-form-label font-weight-bold">Nom</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" id="nom" name="nom" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Créer</button>
+                        <button type="button" class="btn btn-danger" data-dismiss="modal">Annuler</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('#categoriesTable').DataTable({
+        dom: 'Bfrtip', // Positionne les boutons en haut de la table
+        buttons: [
+            {
+                extend: 'excelHtml5',
+                text: 'Exporter XLS',
+                text: '<i class="fas fa-file-excel btn-no-border btn-icon" style="font-size: 40px; color: green; border: none; background: none;"></i>',
+                exportOptions: {
+                    columns: [0, 1] // Exclut la colonne "Actions"
+                }
+            },
+            {
+                text: '<i class="fas fa-file-pdf btn-no-border btn-icon" style="font-size: 40px; color: red; border: none; background: none;"></i>',
+                action: function ( e, dt, node, config ) {
+                    generatePDF(); // Appelle la fonction generatePDF pour créer le PDF
+                }
+            },
+            {
+                extend: 'print',
+                text: '<i class="fas fa-print btn-no-border btn-icon" style="font-size: 40px; color: blue; border: none; background: none;"></i>',
+                title: 'Liste des Catégories',  // Définit le titre pour l'impression
+                customize: function (win) {
+                    // Supprimer la dernière colonne lors de l'impression
+                    $(win.document.body).find('table').find('tr').each(function() {
+                        $(this).find('td:last-child, th:last-child').remove(); // Supprimer la dernière colonne (les actions)
+                    });
+                }
+            }
+        ]
+    });
+
+    function generatePDF() {
+        var table = document.getElementById("categoriesTable");
+        var bodyData = [];
+
+        // Récupérer les en-têtes du tableau (sans la colonne des actions)
+        var headers = [];
+        for (var i = 0; i < table.rows[0].cells.length - 1; i++) { // Exclure la dernière colonne (Actions)
+            headers.push({ text: table.rows[0].cells[i].innerText, bold: true });
+        }
+        bodyData.push(headers);
+
+        // Récupérer les données du tableau (sans la colonne des actions)
+        for (var i = 1; i < table.rows.length; i++) {
+            var rowData = [];
+            for (var j = 0; j < table.rows[i].cells.length - 1; j++) { // Exclure la dernière colonne (Actions)
+                rowData.push({ text: table.rows[i].cells[j].innerText });
+            }
+            bodyData.push(rowData);
+        }
+
+        // Définir la structure du document PDF avec pdfMake
+        var docDefinition = {
+            content: [
+                { text: 'Liste des Catégories', style: 'header' },
+                {
+                    table: {
+                        headerRows: 1,
+                        body: bodyData
+                    }
+                }
+            ],
+            styles: {
+                header: {
+                    fontSize: 18,
+                    bold: true,
+                    alignment: 'center',
+                    margin: [0, 0, 0, 10]
+                }
+            }
+        };
+
+        // Générer le PDF avec pdfMake
+        pdfMake.createPdf(docDefinition).download('Liste_Categories.pdf');
+    }
+});
+</script>
+{% endblock %}
+
+{% endblock %}

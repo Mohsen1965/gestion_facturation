@@ -1,0 +1,64 @@
+<div class="ligne-facture-template" style="display:none;">
+    <!-- Ligne pour l'article -->
+    <div class="form-group row">
+        <label for="id_article" class="col-sm-3 col-form-label">Article</label>
+        <div class="col-sm-9">
+            <select name="article" class="form-control article" required>
+                <option value="" disabled selected>-- Sélectionnez un article --</option>
+                {% for article in articles %}
+                <option value="{{ article.pk }}" data-prix="{{ article.prix_unitaire }}" data-tva="{{ article.tva }}">
+                    {{ article.nom }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <!-- Ligne pour la quantité -->
+    <div class="form-group row">
+        <label for="quantite" class="col-sm-3 col-form-label">Quantité</label>
+        <div class="col-sm-9">
+            <input type="number" name="quantite" class="form-control quantite" placeholder="Quantité" required>
+        </div>
+    </div>
+
+    <!-- Prix unitaire -->
+    <div class="form-group row">
+        <label for="prix_unitaire" class="col-sm-3 col-form-label">Prix Unitaire</label>
+        <div class="col-sm-9">
+            <input type="text" class="form-control prix_unitaire" readonly>
+        </div>
+    </div>
+
+    <!-- Montant HT -->
+    <div class="form-group row">
+        <label for="montant_ht" class="col-sm-3 col-form-label">Montant HT</label>
+        <div class="col-sm-9">
+            <input type="text" class="form-control montant_ht" readonly>
+        </div>
+    </div>
+
+    <!-- Montant TVA -->
+    <div class="form-group row">
+        <label for="montant_tva" class="col-sm-3 col-form-label">Montant TVA</label>
+        <div class="col-sm-9">
+            <input type="text" class="form-control montant_tva" readonly>
+        </div>
+    </div>
+
+    <!-- Montant TTC -->
+    <div class="form-group row">
+        <label for="montant_ttc" class="col-sm-3 col-form-label">Montant TTC</label>
+        <div class="col-sm-9">
+            <input type="text" class="form-control montant_ttc" readonly>
+        </div>
+    </div>
+
+    <!-- Bouton pour supprimer la ligne -->
+    <div class="form-group row">
+        <div class="col-sm-3"></div>
+        <div class="col-sm-9">
+            <button type="button" class="btn btn-danger remove-ligne">Supprimer</button>
+        </div>
+    </div>
+</div>

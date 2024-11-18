@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 style="color:rgb(6, 125, 146)">Modifier Facture {{ facture.numero_facture }}</h1>
+
+<form method="post">
+    {% csrf_token %}
+
+    <div class="form-group form-inline">
+    <label for="{{ form.numero_facture.id_for_label }}" class="mr-2 font-weight-bold">
+        {{ form.numero_facture.label }}
+    </label>
+    {{ form.numero_facture }}
+    {% for error in form.numero_facture.errors %}
+        <div class="alert alert-danger ml-2">{{ error }}</div>
+    {% endfor %}
+
+    <span class="ml-4"></span>
+
+    <label for="{{ form.date_facture.id_for_label }}" class="mr-2 font-weight-bold">
+        {{ form.date_facture.label }}
+    </label>
+    {{ form.date_facture }}
+    {% for error in form.date_facture.errors %}
+        <div class="alert alert-danger ml-2">{{ error }}</div>
+    {% endfor %}
+
+    <span class="ml-4"></span>
+
+  </div>
+<div class="form-group form-inline">
+    <label for="{{ form.client.id_for_label }}" class="mr-2 font-weight-bold">
+        {{ form.client.label }}
+    </label>
+    <div> <!-- Utilisation de flex-grow pour agrandir le champ -->
+        {{ form.client }}
+        {% for error in form.client.errors %}
+            <div class="alert alert-danger ml-2">{{ error }}</div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="form-group form-inline">
+    <label for="total_ht" class="mr-2 font-weight-bold">Total HT</label>
+    <input type="text" id="total_ht" class="form-control" name="total_ht"
+           value="{{ form.total_ht.value|default:0 }}" readonly />
+
+    <label for="total_tva" class="mr-2 font-weight-bold">Total TVA</label>
+    <input type="text" id="total_tva" class="form-control" name="total_tva"
+           value="{{ form.total_tva.value|default:0 }}" readonly />
+
+    <label for="total_ttc" class="mr-2 font-weight-bold">Total TTC</label>
+    <input type="text" id="total_ttc" class="form-control" name="total_ttc"
+           value="{{ form.total_ttc.value|default:0 }}" readonly />
+</div>
+
+<div class="form-group">
+    <label class="font-weight-bold">{{ form.etat.label }}</label>
+    <div class="d-flex">
+        {% for radio in form.etat %}
+            <div class="form-check mr-3">
+                {{ radio.tag }}
+                <label class="form-check-label" for="{{ radio.id_for_label }}">
+                    {{ radio.choice_label }}
+                </label>
+            </div>
+        {% endfor %}
+    </div>
+    {% for error in form.etat.errors %}
+        <div class="alert alert-danger ml-2 mb-0">{{ error }}</div>
+    {% endfor %}
+</div>
+
+
+   
+   
+   
+   
+   
+   
+    <table id="invoice-lines-table" style="font-size: 12px; width: 100%;">
+        <thead style="background-color:green ; color: #FFFFFF;">
+            <tr>
+                <th style="width: 24%;">Article</th>
+                <th style="width: 8%;">Qte</th>
+                <th style="width: 8%;">P. Unit.</th>
+                <th style="width: 8%;">Rem.%</th>
+                <th style="width: 12%;">Mont.Net HT</th>
+                <th style="width: 12%;">Mont. TVA</th>
+                <th style="width: 12%;">Mont. TTC</th>
+                <th style="width: 8%;">TVA %</th>
+                <th style="width: 8%;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ligne in lignes_facture %}
+            <tr id="row_{{ forloop.counter0 }}">
+                <input type="hidden" name="form-{{ forloop.counter0 }}-id" value="{{ ligne.id }}">
+                <input type="hidden" name="form-{{ forloop.counter0 }}-DELETE" value="false" class="delete-input">
+                <td>
+                    <select 
+                        style="width: 100%; max-width: 250px; height: 25px; border-radius: 0; border: 1px solid #ccc; padding: 2px 5px;" 
+                        name="form-{{ forloop.counter0 }}-article" 
+                        class="article-select">
+                        <option value="">Sélectionner un article</option>
+                        {% for article in articles %}
+                        <option value="{{ article.id }}" 
+                                data-ttva="{{ article.tva.taux_tva }}"
+                                {% if article.id == ligne.article.id %}selected{% endif %}>
+                            {{ article.nom }}
+                        </option>
+                        {% endfor %}
+                    </select>
+
+                </td>
+                <td>
+                    <input style="width: 100%; max-width: 80px;" type="number" class="quantite-input" name="form-{{ forloop.counter0 }}-quantite" 
+                           value="{{ ligne.quantite }}" required />
+                </td>
+                <td>
+                    <input style="width: 100%; max-width: 80px;" type="number" class="prix-unitaire-input" name="form-{{ forloop.counter0 }}-prix_unitaire" 
+                           value="{{ ligne.prix_unitaire }}" readonly />
+                </td>
+                <td>
+                    <input style="width: 100%; max-width: 80px;" type="number" class="taux_remise-input" name="form-{{ forloop.counter0 }}-taux_remise" value="{{ ligne.taux_remise }}" step="0.01" required />
+
+                </td>
+                <td>
+                    <input style="width: 100%; max-width: 120px;" type="text" class="montant-ht-input" name="form-{{ forloop.counter0 }}-montant_ht" 
+                           value="{{ ligne.montant_ht|floatformat:3 }}" readonly />
+                </td>
+                <td>
+                    <input style="width: 100%; max-width: 120px;" type="text" class="montant-tva-input" name="form-{{ forloop.counter0 }}-montant_tva" 
+                           value="{{ ligne.montant_tva|floatformat:3 }}" readonly />
+                </td>
+                <td>
+                    <input style="width: 100%; max-width: 120px;" type="text" class="montant-ttc-input" name="form-{{ forloop.counter0 }}-montant_ttc" 
+                           value="{{ ligne.montant_ttc|floatformat:3 }}" readonly />
+                </td>
+                <td>
+                    <input style="width: 100%; max-width: 80px;" type="text" class="ttva-input" name="form-{{ forloop.counter0 }}-ttva" 
+                           value="{{ ligne.article.tva.taux_tva|floatformat:3 }}" readonly />
+                </td>
+                <td style="display: flex; justify-content: space-between;">
+                    <button style="width: 100%; max-width: 40px;" type="button" class="insert-line-btn" onclick="adfLine(this)">
+                        <i class="fas fa-plus" style="color: blue;"></i>
+                    </button>
+                    <button style="width: 100%; max-width: 40px;" type="button" class="remove-line-btn" onclick="removeLine(this)">
+                        <i class="fas fa-trash" style="color: red;"></i>
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <button class="btn btn-primary" type="button" id="add-line-btn">Ajouter une ligne</button>
+    <button class="btn btn-success" type="submit">Modifier Facture</button>
+    <a href="{% url 'list_factures' %}" class="btn btn-danger">Liste des factures</a>
+
+</form>
+
+
+<script>
+    // Initialiser le compteur de lignes
+    let lineCounter = parseInt('{{ lignes_facture|length }}');
+
+    // Fonction pour supprimer une ligne
+    function removeLine(button) {
+        const confirmation = confirm("Êtes-vous sûr de vouloir supprimer cette ligne ?");
+        if (confirmation) {
+            const row = button.closest('tr');
+            if (row) {
+                const deleteInput = row.querySelector('input[name$="-DELETE"]');
+                if (deleteInput) {
+                    deleteInput.value = "on";  // Marquer la ligne pour suppression
+                }
+                row.style.display = 'none';  // Masquer la ligne pour l'utilisateur
+                updateTotals();  // Recalculer les totaux
+            }
+        }
+    }
+
+    // Fonction pour gérer le changement d'article
+    function handleArticleChange(event) {
+        let row = event.target.closest('tr');
+        if (!row) {
+            console.error('Aucune ligne trouvée pour l\'article sélectionné');
+            return;
+        }
+
+        let articleId = event.target.value;
+
+        if (articleId) {
+            fetch(`/factures/get-prix-unitaire/${articleId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.prix_unitaire) {
+                        row.querySelector('.prix-unitaire-input').value = data.prix_unitaire || 0;
+                        let ttvaRate = parseFloat(event.target.selectedOptions[0].dataset.ttva) || 0;
+                        row.querySelector('.ttva-input').value = ttvaRate.toFixed(2);
+                        updateAmounts(row);  // Mettre à jour les montants après sélection de l'article
+                    } else {
+                        console.error('Prix unitaire non trouvé pour l\'article sélectionné');
+                    }
+                })
+                .catch(error => console.error('Erreur lors de la récupération du prix:', error));
+        }
+    }
+
+    // Ajouter des écouteurs d'événements pour chaque ligne
+    function addQuantityAndDiscountListeners(row) {
+        row.querySelector('.quantite-input').addEventListener('input', function () {
+            updateAmounts(row);
+        });
+        row.querySelector('.taux_remise-input').addEventListener('input', function () {
+            updateAmounts(row);
+        });
+    }
+
+    // Fonction pour mettre à jour les montants dynamiquement
+    function updateAmounts(row) {
+        let quantite = parseFloat(row.querySelector('.quantite-input').value) || 0;
+        let prixUnitaire = parseFloat(row.querySelector('.prix-unitaire-input').value) || 0;
+        let tauxRemise = parseFloat(row.querySelector('.taux_remise-input').value) || 0;
+        console.log('tauxRemise= ', tauxRemise)
+        let montantHT = quantite * prixUnitaire * (1 - tauxRemise / 100);
+        row.querySelector('.montant-ht-input').value = montantHT.toFixed(3);
+
+        let ttva = parseFloat(row.querySelector('.ttva-input').value) || 0;
+        let montantTVA = montantHT * ttva / 100;
+        row.querySelector('.montant-tva-input').value = montantTVA.toFixed(3);
+
+        let montantTTC = montantHT + montantTVA;
+        row.querySelector('.montant-ttc-input').value = montantTTC.toFixed(3);
+
+        updateTotals();  // Mettre à jour les totaux après modification des montants
+    }
+
+    // Fonction pour mettre à jour les totaux globaux
+    function updateTotals() {
+        let totalHT = 0;
+        let totalTVA = 0;
+        let totalTTC = 0;
+
+        const rows = document.querySelectorAll('#invoice-lines-table tbody tr');
+        rows.forEach(row => {
+            if (row.style.display !== 'none') {
+                totalHT += parseFloat(row.querySelector('.montant-ht-input').value) || 0;
+                totalTVA += parseFloat(row.querySelector('.montant-tva-input').value) || 0;
+                totalTTC += parseFloat(row.querySelector('.montant-ttc-input').value) || 0;
+            }
+        });
+
+        document.getElementById('total_ht').value = totalHT.toFixed(3);
+        document.getElementById('total_tva').value = totalTVA.toFixed(3);
+        document.getElementById('total_ttc').value = totalTTC.toFixed(3);
+    }
+
+    // Écouteur d'événements pour le changement d'article
+    document.addEventListener('change', function (e) {
+        if (e.target.classList.contains('article-select')) {
+            handleArticleChange(e);
+        }
+    });
+
+    // Écouteur d'événements pour ajouter une nouvelle ligne
+    document.getElementById('add-line-btn').addEventListener('click', function () {
+        const newRow = document.createElement('tr');
+        newRow.innerHTML = `
+            <input type="hidden" name="form-${lineCounter}-id" value="" />
+            <input type="hidden" name="form-${lineCounter}-DELETE" class="delete-input" value="false" />
+            <td>
+                <select 
+                    style="width: 100%; max-width: 250px; height: 25px; border-radius: 0; border: 1px solid #ccc; padding: 2px 5px;" 
+                    name="form-${lineCounter}-article" class="article-select">
+                    <option value="">Sélectionner un article</option>
+                        {% for article in articles %}
+                        <option value="{{ article.id }}" data-ttva="{{ article.tva.taux_tva }}">
+                            {{ article.nom }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </td>
+            <td>
+                <input style="width: 100%; max-width: 80px;" type="number" class="quantite-input" name="form-${lineCounter}-quantite" required />
+            </td>
+            <td>
+                <input style="width: 100%; max-width: 80px;" type="number" class="prix-unitaire-input" name="form-${lineCounter}-prix_unitaire" readonly />
+            </td>
+            <td>
+                <input style="width: 100%; max-width: 80px;" type="number" class="taux_remise-input" name="form-${lineCounter}-taux_remise"  />
+            </td>
+            <td>
+                <input style="width: 100%; max-width: 120px;"  type="text" class="montant-ht-input" name="form-${lineCounter}-montant_ht" readonly />
+            </td>
+            <td>
+                <input style="width: 100%; max-width: 120px;" type="text" class="montant-tva-input" name="form-${lineCounter}-montant_tva" readonly />
+            </td>
+            <td>
+                <input style="width: 100%; max-width: 120px;" type="text" class="montant-ttc-input" name="form-${lineCounter}-montant_ttc" readonly />
+            </td>
+            <td>
+                <input style="width: 100%; max-width: 80px;" type="text" class="ttva-input" name="form-${lineCounter}-ttva" readonly />
+            </td>
+            <td style="display: flex; justify-content: space-between;">
+                    <button style="width: 100%; max-width: 40px;" type="button" class="insert-line-btn" onclick="insertLine(this)">
+                        <i class="fas fa-plus" style="color: blue;"></i>
+                    </button>
+                    <button style="width: 100%; max-width: 40px;" type="button" class="remove-line-btn" onclick="removeLine(this)">
+                        <i class="fas fa-trash" style="color: red;"></i>
+                    </button>
+                </td>
+        `;
+        document.querySelector('#invoice-lines-table tbody').appendChild(newRow);
+        addQuantityAndDiscountListeners(newRow);  // Ajouter des écouteurs d'événements à la nouvelle ligne
+        lineCounter++;  // Incrémenter le compteur
+    });
+
+    // Ajouter des écouteurs d'événements aux lignes existantes
+    document.querySelectorAll('#invoice-lines-table tbody tr').forEach(row => {
+        addQuantityAndDiscountListeners(row);
+    });
+
+
+    
+</script>
+
+{% endblock %}

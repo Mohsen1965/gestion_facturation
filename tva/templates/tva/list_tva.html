@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Liste des TVA{% endblock %}
+
+{% block content %}
+
+<!-- Button to redirect to the page to add a new TVA -->
+<a href="{% url 'create_tva' %}" class="btn btn-primary mb-3">
+    <i class="fas fa-plus"></i> Ajouter TVA
+</a>
+
+<div class="table-responsive">
+  <table id="tvasTable" class="table table-striped">
+      <thead style="background-color: green; color: #FFFFFF;">
+          <tr>
+              <th style="width: 15%;">Taux TVA</th>
+              <th style="width: 35%;">Description</th>
+              <th style="width: 20%;">Actions</th>
+          </tr>
+      </thead>
+      <tbody>
+          {% for tva in tvas %}
+          <tr>
+              <td>{{ tva.taux_tva }} %</td>
+              <td>{{ tva.description }}</td>
+              <td>
+                  <!-- Link to redirect to the edit page for this TVA -->
+                  <a href="{% url 'update_tva' tva_id=tva.id %}" class="btn btn-sm btn-icon">
+                      <i class="fas fa-edit" style="font-size: 20px; color: green;"></i>
+                  </a>
+
+                  <!-- Link to delete this TVA -->
+                  <a href="{% url 'delete_tva' tva_id=tva.id %}" class="btn btn-sm btn-icon" >
+                      <i class="fas fa-trash-alt" style="font-size: 20px; color: #dc3545;"></i>
+                  </a>
+              </td>
+          </tr>
+          {% empty %}
+          <tr>
+              <td colspan="3" class="text-center">Aucune TVA disponible.</td>
+          </tr>
+          {% endfor %}
+      </tbody>
+  </table>
+</div>
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('#tvasTable').DataTable({
+        dom: 'Bfrtip',
+        buttons: [
+            {
+                extend: 'excelHtml5',
+                text: 'Exporter XLS',
+                text: '<i class="fas fa-file-excel btn-no-border btn-icon" style="font-size: 40px; color: green; border: none; background: none;"></i>',
+                exportOptions: {
+                    columns: [0, 1] // Exclude the "Actions" column
+                }
+            },
+            {
+                text: '<i class="fas fa-file-pdf btn-no-border btn-icon" style="font-size: 40px; color: red;"></i>',
+                action: function ( e, dt, node, config ) {
+                    generatePDF();
+                }
+            },
+            {
+                extend: 'print',
+                text: '<i class="fas fa-print btn-no-border btn-icon" style="font-size: 40px; color: blue;"></i>',
+                title: 'Liste des TVA',
+                customize: function (win) {
+                    $(win.document.body).find('table').find('tr').each(function() {
+                        $(this).find('td:last-child, th:last-child').remove();
+                    });
+                }
+            }
+        ]
+    });
+
+    function generatePDF() {
+        var table = document.getElementById("tvasTable");
+        var bodyData = [];
+        var headers = [];
+        for (var i = 0; i < table.rows[0].cells.length - 1; i++) {
+            headers.push({ text: table.rows[0].cells[i].innerText, bold: true });
+        }
+        bodyData.push(headers);
+
+        for (var i = 1; i < table.rows.length; i++) {
+            var rowData = [];
+            for (var j = 0; j < table.rows[i].cells.length - 1; j++) {
+                rowData.push({ text: table.rows[i].cells[j].innerText });
+            }
+            bodyData.push(rowData);
+        }
+
+        var docDefinition = {
+            content: [
+                { text: 'Liste des TVA', style: 'header' },
+                {
+                    table: {
+                        headerRows: 1,
+                        body: bodyData
+                    }
+                }
+            ],
+            styles: {
+                header: {
+                    fontSize: 18,
+                    bold: true,
+                    alignment: 'center',
+                    margin: [0, 0, 0, 10]
+                }
+            }
+        };
+        pdfMake.createPdf(docDefinition).download('Liste_TVA.pdf');
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

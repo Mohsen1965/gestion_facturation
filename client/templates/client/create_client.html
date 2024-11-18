@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2 style="color: rgb(139, 85, 126);" class="font-weight-bold">Ajouter un Client</h2>
+
+<!-- Formulaire pour créer un client -->
+<form method="post" action="{% url 'create_client' %}">
+  {% csrf_token %}
+  
+  <!-- Code Client Row -->
+  <div class="form-row">
+    <div class="form-group col-md-2">
+      <label for="code_client" class="font-weight-bold">Code Client</label>
+    </div>
+    <div class="form-group col-md-4">
+      <input type="text" name="code_client" id="code_client" class="form-control" value="{{ form.code_client.value|default:'' }}">
+    </div>
+  </div>
+  
+  <!-- Nom Row -->
+  <div class="form-row">
+    <div class="form-group col-md-2">
+      <label for="nom" class="font-weight-bold">Nom</label>
+    </div>
+    <div class="form-group col-md-4">
+      <input type="text" name="nom" id="nom" class="form-control" value="{{ form.nom.value|default:'' }}">
+    </div>
+  </div>
+
+  <!-- Adresse Row -->
+  <div class="form-row">
+    <div class="form-group col-md-2">
+      <label for="adresse" class="font-weight-bold">Adresse</label>
+    </div>
+    <div class="form-group col-md-4">
+      <input type="text" name="adresse" id="adresse" class="form-control" value="{{ form.adresse.value|default:'' }}">
+    </div>
+  </div>
+
+  <!-- Email Row -->
+  <div class="form-row">
+    <div class="form-group col-md-2">
+      <label for="email" class="font-weight-bold">Email</label>
+    </div>
+    <div class="form-group col-md-4">
+      <input type="email" name="email" id="email" class="form-control" value="{{ form.email.value|default:'' }}">
+    </div>
+  </div>
+
+  <!-- Téléphone Row -->
+  <div class="form-row">
+    <div class="form-group col-md-2">
+      <label for="telephone" class="font-weight-bold">Téléphone</label>
+    </div>
+    <div class="form-group col-md-4">
+      <input type="text" name="telephone" id="telephone" class="form-control" value="{{ form.telephone.value|default:'' }}">
+    </div>
+  </div>
+
+  <!-- Submit Button -->
+  <button type="submit" class="btn btn-primary">Enregistrer</button>
+  <a href="{% url 'list_clients' %}" class="btn btn-danger">Retour à la liste</a>
+
+</form>
+
+
+{% endblock %}

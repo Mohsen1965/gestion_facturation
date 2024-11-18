@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Détails de la Facture{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 style="color:rgb(6, 125, 146)">Détails de la Facture {{ facture.numero_facture }}</h2>
+    <p><strong>Date :</strong> {{ facture.date_facture }}</p>
+    <p><strong>Client :</strong> {{ facture.client.nom }}</p>
+    <p><strong>Total HT :</strong> {{ facture.total_ht }} </p>
+    <p><strong>Total TVA :</strong> {{ facture.total_tva }} </p>
+    <p><strong>Total TTC :</strong> {{ facture.total_ttc }} </p>
+    <p><strong>État :</strong> {{ facture.etat }}</p>
+
+    <table id="invoice-lines-table" style="font-size: 12px; width: 100%;">
+        <thead style="background-color:green ; color: #FFFFFF;">
+
+            <tr>
+                <th>Article</th>
+                <th>Quantité</th>
+                <th>Prix Unitaire</th>
+                <th>Remise (%)</th>
+                <th>Mont.Net HT</th>
+                <th>Mont. TVA</th>
+                <th>Mont. TTC</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ligne in lignes %}
+            <tr>
+                <td>{{ ligne.article.nom }}</td>
+                <td>{{ ligne.quantite }}</td>
+                <td>{{ ligne.prix_unitaire }} </td>
+                <td>{{ ligne.taux_remise }} %</td>
+                <td>{{ ligne.montant_ht }} </td>
+                <td>{{ ligne.montant_tva }} </td>
+                <td>{{ ligne.montant_ttc }} </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{% url 'list_factures' %}" class="btn btn-danger">Retour à la liste des factures</a>
+</div>
+{% endblock %}
