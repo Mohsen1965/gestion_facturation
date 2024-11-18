@@ -9,6 +9,7 @@ urlpatterns = [
     path('factures/', include('facture.urls')),  # Correctly includes URLs from the facture application
     path('tva/', include('tva.urls')),  # Correctly includes URLs from the facture application
     path('devis/', include('devis.urls')),  # Correctly includes URLs from the facture application
+    path("select2/", include("django_select2.urls")),  # Include Select2 URLs
 
 
     # Add other paths here if necessary

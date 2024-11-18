@@ -1,6 +1,6 @@
 from django import forms
 from django_select2.forms import Select2Widget
-from .models import Article, CategorieArticle, TVA
+from .models import Article
 
 class ArticleForm(forms.ModelForm):
     class Meta:
