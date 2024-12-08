@@ -5,8 +5,11 @@ from django.utils import timezone
 from tva.models import TVA
 from decimal import Decimal
 from decimal import InvalidOperation
+from django.utils.timezone import now
+
 
 class Devis(models.Model):
+    id = models.BigAutoField(primary_key=True)  # Explicitly define the primary key
     numero_devis = models.CharField(max_length=100)
     date_devis = models.DateField(default=timezone.now)
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
@@ -18,12 +21,14 @@ class Devis(models.Model):
         ('valide', 'Validé'),          # Option 2
     ]
     etat = models.CharField(max_length=20, choices=STATUTS, default='non_valide')
+    created_at = models.DateTimeField(default=now, editable=False)  # Ajout du champ
 
     def __str__(self):
         return f"Devis {self.numero_devis} - {self.client}"
 
 
 class LigneDevis(models.Model):
+    id = models.BigAutoField(primary_key=True)  # Explicitly define the primary key
     devis = models.ForeignKey(Devis, related_name='lignes_devis', on_delete=models.CASCADE)
     article = models.ForeignKey(Article, on_delete=models.CASCADE)
     quantite = models.IntegerField()

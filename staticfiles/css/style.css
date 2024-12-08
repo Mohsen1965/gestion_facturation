@@ -1,0 +1,47 @@
+@font-face {
+    font-family: "Glyphicons Halflings";
+    src: url("../fonts/glyphicons-halflings-regular.woff2");
+}
+
+.container {
+    margin-top: 20px;
+}
+
+thead {
+    background-color: rgba(244, 67, 54, 0.85);
+    color: #fff;
+}
+
+mark {
+    background-color: #f4f57a;
+    padding: 0;
+}
+
+button.dt-button, div.dt-button, a.dt-button {
+    padding: 0.3em 0.3em;
+}
+
+/* CSS pour boutons avec icônes seulement */
+.btn-icon {
+    background: none; /* Supprime l'arrière-plan du bouton */
+    border: none; /* Supprime les bordures du bouton */
+    padding: 0; /* Enlève le padding par défaut */
+    cursor: pointer; /* Change le curseur en pointeur pour les boutons */
+}
+
+.btn-icon i {
+    font-size: 20px; /* Ajuste la taille des icônes à 20px x 20px */
+}
+
+/* Appliquer des couleurs spécifiques aux icônes */
+.btn-edit i {
+    color: #007bff !important; /* Bleu pour le bouton de modification */
+}
+
+.btn-delete i {
+    color: #dc3545 !important; /* Rouge pour le bouton de suppression */
+}
+
+.btn-view i {
+    color: #17a2b8 !important; /* Cyan pour le bouton de visualisation */
+}

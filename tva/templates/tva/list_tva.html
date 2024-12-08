@@ -5,13 +5,16 @@
 {% block content %}
 
 <!-- Button to redirect to the page to add a new TVA -->
+<a href="{% url 'list_tva' %}" class="btn btn-secondary mb-3 btn-icon" style="margin-left: 2px; background-color: #955251;">
+    <i class="fas fa-sync-alt"></i>
+</a>
 <a href="{% url 'create_tva' %}" class="btn btn-primary mb-3">
     <i class="fas fa-plus"></i> Ajouter TVA
 </a>
 
 <div class="table-responsive">
   <table id="tvasTable" class="table table-striped">
-      <thead style="background-color: green; color: #FFFFFF;">
+      <thead style="background-color: #581845; color: #FFFFFF;">
           <tr>
               <th style="width: 15%;">Taux TVA</th>
               <th style="width: 35%;">Description</th>

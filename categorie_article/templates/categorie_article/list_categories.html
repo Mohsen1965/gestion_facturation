@@ -3,214 +3,236 @@
 {% block title %}Liste des Catégories{% endblock %}
 
 {% block content %}
+<h1 style="text-align: center; margin-bottom: 5px;">Liste des Categories Aricles</h1>
+<hr style="border: 1px solid black; width: 100%; margin-bottom: 5px;">
 
-<!-- Bouton pour ouvrir le modal d'ajout -->
-<button type="button" class="btn btn-primary mb-3 btn-icon" data-toggle="modal" data-target="#createcategorieModal">
-    <i class="fas fa-plus"></i> Catégorie
-</button>
+{% if show_search %}
+<!-- Formulaire de recherche avec cadre à angles arrondis -->
+<div style="background-color: #f9f9f9; padding: 5px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); width: 100%; margin: 0 auto;">
+    <h3 style="text-align: left; font-size: 14px; font-weight: bold; color: red; margin-bottom: 5px;">Recherche Multicritère</h3>
+    <form method="GET" action="{% url 'categorie_list_rechMultc' %}" class="mb-3">
+        <div class="row d-flex align-items-center">
+            <div class="col-md-3" style="margin-bottom: 15px;">
+                <label for="field" class="form-label">Champ</label>
+                <select name="field" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;">
+                    <option value="nom">Nom</option>
+                    <option value="taux_tva">Taux TVA</option>
+                </select>
+            </div>
+            <div class="col-md-3" style="margin-bottom: 15px;">
+                <label for="operator" class="form-label">Opérateur</label>
+                <select name="operator" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;">
+                    <option value="exact">Égal à</option>
+                    <option value="icontains">Contient</option>
+                    <option value="gt">Supérieur à</option>
+                    <option value="lt">Inférieur à</option>
+                    <option value="neq">Différent de</option>
+                    <option value="lte">Inférieur ou égal à</option>
+                    <option value="gte">Supérieur ou égal à</option>
+                    <option value="range">Valeur comprise entre</option>
+                </select>
+            </div>
+            <div class="col-md-3" style="margin-bottom: 15px;">
+                <label for="value" class="form-label">Valeur</label>
+                <input type="text" name="value" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;" />
+                <div id="range-inputs" style="display: none;">
+                    <input type="number" name="range_min" placeholder="Borne inférieure" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;">
+                    <input type="number" name="range_max" placeholder="Borne supérieure" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;">
+                </div>
+            </div>
+            <div class="col-md-3" style="margin-bottom: 15px;">
+                <button type="submit" class="btn btn-success mt-4" style="background-color: #007bff; border: none; padding: 10px 20px; font-size: 16px; cursor: pointer;">
+                    <i class="fas fa-search"></i> Rechercher
+                </button>
+            </div>
+        </div>
+        <input type="hidden" name="show_search" value="true">
+    </form>
+    
+    <hr style="border: 1px solid black; width: 100%; margin-bottom: 5px;">
 
-<div class="table-responsive">
-    <table id="categoriesTable" class="table table-striped">
-        <thead style="background-color:green ; color: #FFFFFF;">
+</div>
+{% endif %}
+
+
+<!-- Bouton pour ouvrir le formulaire d'ajout de catégorie -->
+<div style="display: inline-flex; align-items: center;">
+    <a href="{% url 'list_categories' %}" class="btn btn-secondary mb-3 btn-icon" style="margin-left: 2px; background-color: #955251;">
+        <i class="fas fa-sync-alt"></i>
+    </a>
+    <a href="{% url 'create_categorie' %}" class="btn btn-primary mb-3 btn-icon" style="margin-left: 2px;">
+        <i class="fas fa-plus"></i> Catégorie
+    </a>
+
+    <!-- Formulaire pour supprimer les catégories sélectionnées -->
+    <form id="deleteSelectedCategoriesForm" method="POST" action="{% url 'delete_categories' %}" style="margin-left: 2px; display: inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger mb-3 btn-icon">
+            <i class="fas fa-trash"></i> <i class="fa-solid fa-check"></i>
+        </button>
+        <input type="hidden" id="selectedCategories" name="selected_categories">
+    </form>
+</div>
+
+
+<div class="table-responsive" style="font-size: 8pt; font-family: Verdana, sans-serif;">
+    <table id="categorieTable" class="table table-striped" style="font-size: 11px; border-collapse: collapse; width: 100%;">
+        <thead style="background-color: #581845; color: #FFFFFF; font-size: 11pt; font-weight: bold;">
             <tr>
-                <th>ID</th>
-                <th>Nom</th>
-                <th>Actions</th>
+                <th style="padding: 5px; height: 40px; width: 30px;">
+                    <input type="checkbox" id="selectAllCategories" title="Tout sélectionner" />
+                </th>
+                <th style="padding: 5px; height: 40px;">Nom</th>
+                <th style="padding: 5px; height: 40px;">Taux TVA</th>
+                <th style="padding: 5px; height: 40px;">Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for categorie in categories %}
-            <tr>
-                <td>{{ categorie.id }}</td>
-                <td>{{ categorie.nom }}</td>
-                <td>
-                    <!-- Bouton pour afficher le modal d'édition -->
-                    <button type="button" class="btn btn-sm btn-icon" style="background: none; border: none; padding: 0; cursor: pointer;" data-toggle="modal" data-target="#updatecategorieModal{{ categorie.pk }}">
-                        <i class="fas fa-edit" style="font-size: 20px; color: green;"></i>
-                    </button>
-
-                    <!-- Modal pour afficher les détails d'une catégorie -->
-                    <button type="button" class="btn btn-sm btn-icon" style="background: none; border: none; padding: 0; cursor: pointer;" data-toggle="modal" data-target="#viewcategorieModal{{ categorie.pk }}">
-                        <i class="fas fa-eye" style="font-size: 20px; color: blue;"></i>
-                    </button>
-                    
-                    <div class="modal fade" id="viewcategorieModal{{ categorie.pk }}" tabindex="-1" role="dialog" aria-labelledby="viewcategorieModalLabel{{ categorie.pk }}" aria-hidden="true">
-                        <div class="modal-dialog" role="document">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title" id="viewcategorieModalLabel{{ categorie.pk }}">Détails de la Catégorie</h5>
-                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                        <span aria-hidden="true">&times;</span>
-                                    </button>
-                                </div>
-                                <div class="modal-body">
-                                    <p><strong>ID :</strong> {{ categorie.id }}</p>
-                                    <p><strong>Nom :</strong> {{ categorie.nom }}</p>
-                                    <!-- Ajoute d'autres détails si nécessaire -->
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Modal pour éditer une catégorie -->
-                    <div class="modal fade" id="updatecategorieModal{{ categorie.pk }}" tabindex="-1" role="dialog" aria-labelledby="updatecategorieModalLabel{{ categorie.pk }}" aria-hidden="true">
-                        <div class="modal-dialog" role="document">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title" style="color: #dc3545;font-weight: bold" id="updatecategorieModalLabel{{ categorie.pk }}">Éditer Catégorie</h5>
-                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                        <span aria-hidden="true">&times;</span>
-                                    </button>
-                                </div>
-                                <div class="modal-body">
-                                    <!-- Formulaire de mise à jour de la catégorie -->
-                                    <form method="POST" action="{% url 'update_categorie' categorie.pk %}">
-                                        {% csrf_token %}
-                                        <div class="form-group row">
-                                            <label for="nom" class="col-sm-3 col-form-label font-weight-bold">Nom</label>
-                                            <div class="col-sm-9">
-                                                <input type="text" class="form-control" id="nom" name="nom" value="{{ categorie.nom }}" required>
-                                            </div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="submit" class="btn btn-primary">Mettre à jour</button>
-                                            <button type="button" class="btn btn-danger" data-dismiss="modal">Annuler</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Lien pour supprimer une catégorie -->
-                    <a href="{% url 'delete_categorie' categorie.pk %}" class="btn btn-sm btn-icon" style="background: none; border: none; padding: 0; cursor: pointer;">
-                        <i class="fas fa-trash-alt" style="font-size: 20px; color: #dc3545;"></i>
+            <tr style="border-bottom: 1px solid #ccc;">
+                <td style="padding: 1px; text-align: center;">
+                    <input type="checkbox" name="selected_categories" value="{{ categorie.id }}">
+                </td>
+                
+                <td style="padding: 1px;">{{ categorie.nom }}</td>
+                <td style="padding: 1px;">{{ categorie.taux_tva }}</td>
+                <td style="padding: 1px;">
+                    <a href="{% url 'afficher_categorie' categorie.id %}" style="color: blue; text-decoration: none; font-size: 12pt;">
+                        <i class="fas fa-eye"></i>
                     </a>
-
+                    <a href="{% url 'update_categorie' categorie.id %}" style="color: orange; text-decoration: none; font-size: 12pt;">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="{% url 'delete_categorie' categorie.id %}" style="color: red; text-decoration: none; font-size: 12pt;">
+                        <i class="fas fa-trash"></i>
+                    </a>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="3" class="text-center">Aucune catégorie trouvée.</td>
+                <td colspan="5" class="text-center">Aucune catégorie trouvée.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
 
-<!-- Modal pour ajouter une nouvelle catégorie -->
-<div class="modal fade" id="createcategorieModal" tabindex="-1" role="dialog" aria-labelledby="createcategorieModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="createcategorieModalLabel" style="color: #dc3545; font-weight: bold">Ajouter une Catégorie</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <!-- Formulaire de création de catégorie -->
-                <form id="categorieForm" method="POST" action="{% url 'create_categorie' %}">
-                    {% csrf_token %}
-                    <div class="form-group row">
-                        <label for="nom" class="col-sm-3 col-form-label font-weight-bold">Nom</label>
-                        <div class="col-sm-9">
-                            <input type="text" class="form-control" id="nom" name="nom" required>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary">Créer</button>
-                        <button type="button" class="btn btn-danger" data-dismiss="modal">Annuler</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-{% block extra_js %}
 <script>
-$(document).ready(function() {
-    $('#categoriesTable').DataTable({
-        dom: 'Bfrtip', // Positionne les boutons en haut de la table
-        buttons: [
-            {
-                extend: 'excelHtml5',
-                text: 'Exporter XLS',
-                text: '<i class="fas fa-file-excel btn-no-border btn-icon" style="font-size: 40px; color: green; border: none; background: none;"></i>',
-                exportOptions: {
-                    columns: [0, 1] // Exclut la colonne "Actions"
-                }
-            },
-            {
-                text: '<i class="fas fa-file-pdf btn-no-border btn-icon" style="font-size: 40px; color: red; border: none; background: none;"></i>',
-                action: function ( e, dt, node, config ) {
-                    generatePDF(); // Appelle la fonction generatePDF pour créer le PDF
-                }
-            },
-            {
-                extend: 'print',
-                text: '<i class="fas fa-print btn-no-border btn-icon" style="font-size: 40px; color: blue; border: none; background: none;"></i>',
-                title: 'Liste des Catégories',  // Définit le titre pour l'impression
-                customize: function (win) {
-                    // Supprimer la dernière colonne lors de l'impression
-                    $(win.document.body).find('table').find('tr').each(function() {
-                        $(this).find('td:last-child, th:last-child').remove(); // Supprimer la dernière colonne (les actions)
-                    });
-                }
-            }
-        ]
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Gestion de la case à cocher "Tout sélectionner" pour les catégories
+    document.getElementById('selectAllCategories').addEventListener('change', function () {
+        const isChecked = this.checked;
+        const checkboxes = document.querySelectorAll('input[name="selected_categories"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = isChecked;
+        });
     });
+});
 
-    function generatePDF() {
-        var table = document.getElementById("categoriesTable");
-        var bodyData = [];
 
-        // Récupérer les en-têtes du tableau (sans la colonne des actions)
-        var headers = [];
-        for (var i = 0; i < table.rows[0].cells.length - 1; i++) { // Exclure la dernière colonne (Actions)
-            headers.push({ text: table.rows[0].cells[i].innerText, bold: true });
-        }
-        bodyData.push(headers);
 
-        // Récupérer les données du tableau (sans la colonne des actions)
-        for (var i = 1; i < table.rows.length; i++) {
-            var rowData = [];
-            for (var j = 0; j < table.rows[i].cells.length - 1; j++) { // Exclure la dernière colonne (Actions)
-                rowData.push({ text: table.rows[i].cells[j].innerText });
-            }
-            bodyData.push(rowData);
-        }
-
-        // Définir la structure du document PDF avec pdfMake
-        var docDefinition = {
-            content: [
-                { text: 'Liste des Catégories', style: 'header' },
+document.addEventListener('DOMContentLoaded', function () {
+        // Initialize DataTable
+        $('#categorieTable').DataTable({
+            dom: 'Bfrtip',
+            buttons: [
                 {
-                    table: {
-                        headerRows: 1,
-                        body: bodyData
+                    extend: 'excelHtml5',
+                    text: '<i class="fas fa-file-excel" style="font-size: 20px; color: green;"></i>',
+                    exportOptions: { columns: [0, 1, 2] }  // Mettez à jour les colonnes en fonction de celles de vos catégories
+                },
+                {
+                    extend: 'pdfHtml5',
+                    text: '<i class="fas fa-file-pdf" style="font-size: 20px; color: red;"></i>',
+                    exportOptions: { columns: [0, 1, 2] }
+                },
+                {
+                    extend: 'print',
+                    text: '<i class="fas fa-print" style="font-size: 20px; color: blue;"></i>',
+                    title: 'Liste des Catégories',
+                    customize: function(win) {
+                        // Applique un style à la table pour l'impression
+                        $(win.document.body).find('table').addClass('display').css('font-size', '12px');
+                        
+                        // Masque la dernière colonne (colonne des actions)
+                        $(win.document.body).find('table thead th:last-child, table tbody td:last-child').hide();
                     }
                 }
-            ],
-            styles: {
-                header: {
-                    fontSize: 18,
-                    bold: true,
-                    alignment: 'center',
-                    margin: [0, 0, 0, 10]
-                }
-            }
-        };
 
-        // Générer le PDF avec pdfMake
-        pdfMake.createPdf(docDefinition).download('Liste_Categories.pdf');
-    }
+            ],
+            initComplete: function() {
+                $('#searchInput').on('keyup', function() {
+                    table.search(this.value).draw();
+                });
+            },
+            language: {
+                url: "/static/js/lang/French.json"
+            },
+            //order: [[1, 'asc']], // Trier par No par défaut
+            columnDefs: [
+                { orderable: false, targets: -1 } // Désactiver le tri sur la colonne "Actions"
+            ]
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+    const deleteForm = document.getElementById('deleteSelectedCategoriesForm');
+    
+    deleteForm.addEventListener('submit', function (event) {
+        event.preventDefault();  // Prevent default form submission
+
+        const selectedCategories = Array.from(document.querySelectorAll('input[name="selected_categories"]:checked'))
+            .map(checkbox => checkbox.value);  // Get the IDs of the selected categories
+
+        if (selectedCategories.length === 0) {
+            alert('Veuillez sélectionner au moins une catégorie.');
+            return;
+        }
+
+        // Confirmation dialog before submitting the form
+        const confirmDelete = confirm('Êtes-vous sûr de vouloir supprimer ces catégories sélectionnées ?');
+
+        if (confirmDelete) {
+            // Update the hidden input field with the selected category IDs
+            document.getElementById('selectedCategories').value = selectedCategories.join(',');
+
+            // Submit the form via AJAX
+            fetch(deleteForm.action, {
+                method: 'POST',
+                body: new FormData(deleteForm),
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);  // Display success message
+                    location.reload();  // Reload the page to update the category list
+                } else {
+                    alert(data.message);  // Display error message
+                }
+            })
+            .catch(error => {
+                alert('Une erreur est survenue lors de la suppression.');
+            });
+        }
+    });
 });
+
+
+const selectOperator = document.querySelector('select[name="operator"]');
+    const rangeInputs = document.getElementById('range-inputs');
+
+    selectOperator.addEventListener('change', () => {
+        if (selectOperator.value === 'range') {
+            rangeInputs.style.display = 'block';
+        } else {
+            rangeInputs.style.display = 'none';
+        }
+    });
+
 </script>
-{% endblock %}
 
 {% endblock %}

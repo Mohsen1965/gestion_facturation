@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Modifier la catégorie{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="font-weight-bold" style="color: rgb(6, 125, 146);">Modifier la catégorie : {{ categorie.nom }}</h2>
+
+    <!-- Affichage du formulaire de modification de catégorie -->
+    <form method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}  <!-- Affiche les champs du formulaire -->
+
+        <!-- Boutons pour soumettre ou annuler -->
+        <div class="mt-3">
+            <button type="submit" class="btn btn-primary">Mettre à jour</button>
+            <a href="{% url 'list_categories' %}" class="btn btn-danger">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

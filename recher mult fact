@@ -1,0 +1,85 @@
+from datetime import datetime
+from django.db.models import Q
+from django.shortcuts import render
+from .models import Facture
+
+def list_facture_rechMultc(request):
+    factures = Facture.objects.all()
+
+    # Récupération des paramètres de recherche
+    show_search = request.GET.get('show_search', False)
+    field = request.GET.get('field', '')
+    operator = request.GET.get('operator', '')
+    value = request.GET.get('value', '')
+    field2 = request.GET.get('field2', '')
+    operator2 = request.GET.get('operator2', '')
+    value2 = request.GET.get('value2', '')
+    logical_operator = request.GET.get('logical_operator', 'and')  # Par défaut 'and'
+
+    # Initialisation des filtres
+    query1 = Q()
+    query2 = Q()
+
+    # Fonction utilitaire pour convertir une date au format français
+    def convert_french_date(date_str):
+        try:
+            return datetime.strptime(date_str, '%d/%m/%Y').date()
+        except ValueError:
+            return None  # Retourne None si le format est invalide
+
+    # Fonction utilitaire pour construire les Q objects
+    def construct_query(field, operator, value):
+        if operator == 'exact':
+            return Q(**{f"{field}__exact": value})
+        elif operator == 'icontains':
+            return Q(**{f"{field}__icontains": value})
+        elif operator == 'gt':
+            return Q(**{f"{field}__gt": value})
+        elif operator == 'lt':
+            return Q(**{f"{field}__lt": value})
+        elif operator == 'gte':
+            return Q(**{f"{field}__gte": value})
+        elif operator == 'lte':
+            return Q(**{f"{field}__lte": value})
+        return Q()  # Retourne un Q vide si l'opérateur est invalide
+
+    # Construction du premier critère
+    if field and operator and value:
+        if field == 'date_facture':  # Conversion nécessaire pour les dates
+            date_value = convert_french_date(value)
+            if date_value:
+                query1 = construct_query(field, operator, date_value)
+        elif field in ['total_ht', 'total_tva', 'total_ttc', 'etat']:
+            query1 = construct_query(field, operator, value)
+        elif field.startswith('client__'):
+            query1 = construct_query(field, operator, value)
+
+    # Construction du deuxième critère
+    if field2 and operator2 and value2:
+        if field2 == 'date_facture':  # Conversion nécessaire pour les dates
+            date_value2 = convert_french_date(value2)
+            if date_value2:
+                query2 = construct_query(field2, operator2, date_value2)
+        elif field2 in ['total_ht', 'total_tva', 'total_ttc', 'etat']:
+            query2 = construct_query(field2, operator2, value2)
+        elif field2.startswith('client__'):
+            query2 = construct_query(field2, operator2, value2)
+
+    # Combinaison des deux critères avec l'opérateur logique
+    if logical_operator == 'and':
+        final_query = query1 & query2
+    elif logical_operator == 'or':
+        final_query = query1 | query2
+    else:
+        final_query = query1  # Si opérateur logique invalide
+
+    # Appliquer le filtre final
+    factures = factures.filter(final_query)
+
+    # Contexte pour le rendu
+    context = {
+        'factures': factures,
+        'show_search': show_search,
+    }
+    return render(request, 'facture/list_factures.html', context)
+

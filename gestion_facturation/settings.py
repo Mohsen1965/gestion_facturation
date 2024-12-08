@@ -27,9 +27,14 @@ INSTALLED_APPS = [
     'facture',
     'tva_facture',
     'devis',
+    'corsheaders',
+
 ]
 
 MIDDLEWARE = [
+
+    'corsheaders.middleware.CorsMiddleware',
+
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -37,7 +42,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
 ]
+CORS_ALLOW_ALL_ORIGINS = True  # Autoriser toutes les origines
 
 ROOT_URLCONF = 'gestion_facturation.urls'
 
@@ -102,10 +109,12 @@ USE_L10N = True
 USE_TZ = True
 
 
-
-
-
 # settings.py
 
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]  # Inclure ce répertoire pour le développement
+STATIC_URL = '/static/'  # URL pour accéder aux fichiers statiques
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),  # Répertoire des fichiers statiques supplémentaires
+]
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Répertoire où collectstatic copiera les fichiers

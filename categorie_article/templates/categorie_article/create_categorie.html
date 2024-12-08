@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2 style="color: rgb(139, 85, 126);" class="font-weight-bold">Ajouter une Catégorie</h2>
+
+<!-- Formulaire pour créer une catégorie -->
+<form method="post" action="{% url 'create_categorie' %}">
+  {% csrf_token %}
+  
+  <!-- Nom de la Catégorie Row -->
+  <div class="form-row">
+    <div class="form-group col-md-2">
+      <label for="nom" class="font-weight-bold">Nom de la Catégorie</label>
+    </div>
+    <div class="form-group col-md-4">
+      <input type="text" name="nom" id="nom" class="form-control" value="{{ form.nom.value|default:'' }}">
+    </div>
+  </div>
+  
+  <!-- Taux de TVA Row -->
+  <div class="form-row">
+    <div class="form-group col-md-2">
+      <label for="taux_tva" class="font-weight-bold">Taux de TVA (%)</label>
+    </div>
+    <div class="form-group col-md-4">
+      <input type="number" name="taux_tva" id="taux_tva" step="0.001" class="form-control" value="{{ form.taux_tva.value|default:'' }}">
+    </div>
+  </div>
+
+  <!-- Submit Button -->
+  <button type="submit" class="btn btn-primary">Enregistrer</button>
+  <a href="{% url 'list_categories' %}" class="btn btn-danger">Retour à la liste</a>
+
+</form>
+{% endblock %}

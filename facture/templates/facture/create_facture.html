@@ -34,13 +34,14 @@
         <label for="{{ form.client.id_for_label }}" class="mr-2 font-weight-bold">
             {{ form.client.label }}
         </label>
-        <div> <!-- Utilisation de flex-grow pour agrandir le champ -->
+        <div style="flex-grow: 1; width: 50%"> <!-- Utilisation de flex-grow pour agrandir le champ -->
             {{ form.client }}
             {% for error in form.client.errors %}
-                <div class="alert alert-danger ml-2">{{ error }}</div>
+                <div id="id_client" name="id_client" class="alert alert-danger ml-2">{{ error }}</div>
             {% endfor %}
         </div>
     </div>
+    
     
     <div class="container">
         <div class="form-group row justify-content-end align-items-center" style="margin-bottom: 2px;">
@@ -110,7 +111,13 @@
         <tbody>
             {% for form in formset %}
                 <tr id="line_{{ forloop.counter0 }}">
-                    <td>{{ form.article }}</td>
+                    <td>
+                        <!-- Champ article avec une classe pour référencer dans JS -->
+                        {{ form.article }}
+                        {% for error in form.article.errors %}
+                            <div class="alert alert-danger ml-2">{{ error }}</div>
+                        {% endfor %}
+                    </td>
                     <td>
                         <input 
                             type="number" 
@@ -127,7 +134,9 @@
                             id="prix_unitaire_{{ forloop.counter0 }}" 
                             name="form-{{ forloop.counter0 }}-prix_unitaire" 
                             value="0" 
-                            readonly 
+                            step="0.001"
+                            min="0"
+                            oninput="calculateMontants('{{ forloop.counter0 }}');" 
                             style="width: 100%; max-width: 80px;"
                         />
                     </td>
@@ -217,10 +226,20 @@
 
 
 
-
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
  
- 
+ $(document).ready(function() {
+        $('.select2').select2({
+            width: '100%',
+            placeholder: 'Sélectionnez un client ou ajoutez-en un nouveau',
+            tags: true,  // Permet d'ajouter de nouveaux tags
+            allowClear: true  // Permet de nettoyer la sélection
+        });
+        
+    });
+
  let lineCounter = parseInt('{{ formset.total_form_count }}'); // Initial count based on existing lines
 
 // Function to add a new line
@@ -240,8 +259,19 @@ document.getElementById('add-line-btn').addEventListener('click', function() {
         </select>
     </td>
     <td><input type="number" id="quantite_${lineCounter}" name="form-${lineCounter}-quantite" style="width: 100%; font-size: 12px;" value="0" oninput="calculateMontants(${lineCounter});" /></td>
-    <td><input type="number" id="prix_unitaire_${lineCounter}" name="form-${lineCounter}-prix_unitaire" style="width: 100%; font-size: 12px;" value="0" readonly /></td>
-    <td><input type="number" id="taux_remise_${lineCounter}" name="form-${lineCounter}-taux_remise" style="width: 100%; max-width: 80px; font-size: 12px;" value="0" oninput="calculateMontants(${lineCounter});" /></td>
+<td>
+    <input 
+        type="number" 
+        id="prix_unitaire_${lineCounter}" 
+        name="form-${lineCounter}-prix_unitaire" 
+        style="width: 100%; font-size: 12px;" 
+        value="0.000"
+        min="0"
+        step="0.001"
+        oninput="calculateMontants(${lineCounter});" 
+        placeholder="Prix unitaire"
+    />
+</td>    <td><input type="number" id="taux_remise_${lineCounter}" name="form-${lineCounter}-taux_remise" style="width: 100%; max-width: 80px; font-size: 12px;" value="0" oninput="calculateMontants(${lineCounter});" /></td>
     <td><input type="number" id="montant_ht_${lineCounter}" name="form-${lineCounter}-montant_ht" readonly style="width: 100%; font-size: 12px;" value="0.000" /></td>
     <td><input type="number" id="montant_tva_${lineCounter}" name="form-${lineCounter}-montant_tva" readonly style="width: 100%; font-size: 12px;" value="0.000" /></td>
     <td><input type="number" id="montant_ttc_${lineCounter}" name="form-${lineCounter}-montant_ttc" readonly style="width: 100%; font-size: 12px;" value="0.000" /></td>
@@ -452,35 +482,28 @@ function calculateTotalAmounts() {
     let totalTTC = 0;
     let totalRemise = 0;
 
+    // Parcourir toutes les lignes du tableau
     document.querySelectorAll('tbody tr').forEach(function(row) {
-        let montantHTField = row.querySelector('input[name$="montant_ht"]');
-        let montantotal_tvaField = row.querySelector('input[name$="montant_tva"]');
-        let montantTTCField = row.querySelector('input[name$="montant_ttc"]');
+        let quantiteField = row.querySelector('input[name$="quantite"]');
+        let prixUnitaireField = row.querySelector('input[name$="prix_unitaire"]');
         let tauxRemiseField = row.querySelector('input[name$="taux_remise"]');
 
-        let montantHT = montantHTField ? parseFloat(montantHTField.value) || 0 : 0;
-        let montantotal_tva = montantotal_tvaField ? parseFloat(montantotal_tvaField.value) || 0 : 0;
-        let montantTTC = montantTTCField ? parseFloat(montantTTCField.value) || 0 : 0;
+        let quantite = quantiteField ? parseFloat(quantiteField.value) || 0 : 0;
+        let prixUnitaire = prixUnitaireField ? parseFloat(prixUnitaireField.value) || 0 : 0;
         let tauxRemise = tauxRemiseField ? parseFloat(tauxRemiseField.value) || 0 : 0;
 
+        let montantHT = quantite * prixUnitaire * (1 - tauxRemise / 100);
+        let montantRemise = quantite * prixUnitaire * (tauxRemise / 100);
+
         totalHT += montantHT;
-        totalTVA += montantotal_tva;
-        totalTTC += montantTTC;
-
-        // Calculer le montant de la remise pour cette ligne
-        totalRemise += (montantHT * (tauxRemise / 100));
-
+        totalRemise += montantRemise; // Ajoutez la remise ligne par ligne
+        totalTVA += montantHT * (parseFloat(row.querySelector('input[name$="taux_tva"]').value || 0) / 100);
     });
-
+    // Mettre à jour les champs du formulaire pour les totaux
     document.getElementById('id_total_ht').value = totalHT.toFixed(3);
     document.getElementById('id_total_remise').value = totalRemise.toFixed(3);
     document.getElementById('id_total_tva').value = totalTVA.toFixed(3);
-    document.getElementById('id_total_ttc').value = totalTTC.toFixed(3);
-
-    if (!quantite || !prixUnitaire || !tauxRemise) {
-    console.error("One of the required fields is empty:", {quantite, prixUnitaire, tauxRemise});
-}
-
+    document.getElementById('id_total_ttc').value = (totalHT + totalTVA).toFixed(3);
 }
 
 

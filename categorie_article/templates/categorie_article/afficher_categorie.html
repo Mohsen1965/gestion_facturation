@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block title %}Détails de la catégorie{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="font-weight-bold" style="color: rgb(6, 125, 146);">Détails de la catégorie : {{ categorie.nom }}</h2>
+    
+    <p><strong>Nom de la catégorie :</strong> {{ categorie.nom }}</p>
+    <p><strong>Taux de TVA :</strong> {{ categorie.taux_tva }}%</p>
+
+    <!-- Lien pour revenir à la liste des catégories -->
+    <a href="{% url 'list_categories' %}" class="btn btn-danger">Retour à la liste des catégories</a>
+</div>
+{% endblock %}
