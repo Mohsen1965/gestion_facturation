@@ -1,134 +1,240 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
 {% block title %}Liste des Articles{% endblock %}
 
 {% block content %}
+<h1 style="text-align: center; margin-bottom: 5px;">Liste des Articles</h1>
+<hr style="border: 1px solid black; width: 100%; margin-bottom: 5px;">
 
-<!-- Bouton pour rediriger vers la page d'ajout d'un nouvel article -->
-<a href="{% url 'create_article' %}" class="btn btn-primary mb-3">
+{% if show_search %}
+<!-- Formulaire de recherche avec cadre à angles arrondis -->
+<div style="background-color: #f9f9f9; padding: 5px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); width: 100%; margin: 0 auto;">
+    <h3 style="text-align: left; font-size: 14px; font-weight: bold; color: red; margin-bottom: 5px;">Recherche Multicritère</h3>
+    <form method="GET" action="{% url 'article_list_rechMultc' %}" class="mb-3">
+        <div class="row d-flex align-items-center">
+            <div class="col-md-3" style="margin-bottom: 15px;">
+                <label for="field" class="form-label">Champ</label>
+                <select name="field" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;">
+                    <option value="nom">Nom</option>
+                    <option value="code_article">Code Article</option>
+                    <option value="prix_unitaire">Prix Unitaire</option>
+                    <option value="stock">Stock</option>
+                    <option value="categorie__nom">Catégorie</option>
+                    <option value="tva__taux_tva">TVA</option>
+                </select>
+            </div>
+            <div class="col-md-3" style="margin-bottom: 15px;">
+                <label for="operator" class="form-label">Opérateur</label>
+                <select name="operator" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;">
+                    <option value="exact">Égal à</option>
+                    <option value="icontains">Contient</option>
+                    <option value="gt">Supérieur à</option>
+                    <option value="lt">Inférieur à</option>
+                    <option value="neq">Différent de</option>
+                    <option value="lte">Inférieur ou égal à</option>
+                    <option value="gte">Supérieur ou égal à</option>
+                    <option value="range">Valeur comprise entre</option>
+                </select>
+            </div>
+            <div class="col-md-3" style="margin-bottom: 15px;">
+                <label for="value" class="form-label">Valeur</label>
+                <input type="text" name="value" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;" />
+                <div id="range-inputs" style="display: none;">
+                    <input type="number" name="range_min" placeholder="Borne inférieure" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;">
+                    <input type="number" name="range_max" placeholder="Borne supérieure" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;">
+                </div>
+            </div>
+            <div class="col-md-3" style="margin-bottom: 15px;">
+                <button type="submit" class="btn btn-success mt-4" style="background-color: #007bff; border: none; padding: 10px 20px; font-size: 16px; cursor: pointer;">
+                    <i class="fas fa-search"></i> Rechercher
+                </button>
+            </div>
+        </div>
+        <input type="hidden" name="show_search" value="true">
+    </form>
+    
+    <hr style="border: 1px solid black; width: 100%; margin-bottom: 5px;">
+
+</div>
+
+{% endif %}
+
+
+<!-- Bouton pour ouvrir le formulaire d'ajout d'article -->
+<a href="{% url 'list_articles' %}" class="btn btn-secondary mb-3 btn-icon" style="margin-left: 2px; background-color: #955251;">
+    <i class="fas fa-sync-alt"></i>
+</a>
+<a href="{% url 'create_article' %}" class="btn btn-primary mb-3 btn-icon" style="margin-left:2px;">
     <i class="fas fa-plus"></i> Article
 </a>
 
-<div class="table-responsive">
-  <table id="articlesTable" class="table table-striped">
-      <thead style="background-color: green; color: #FFFFFF;">
-          <tr>
-              <th style="width: 12%;">Code Art.</th>
-              <th style="width: 25%;">Nom</th>
-              <th style="width: 10%;">P Unit.</th>
-              <th style="width: 10%;">Stock</th>
-              <th style="width: 15%;">Catégorie</th>
-              <th style="width: 10%;">TVA</th>
-              <th style="width: 20%;">Actions</th>
-          </tr>
-      </thead>
-      <tbody>
-          {% for article in articles %}
-          <tr>
-              <td>{{ article.code_article }}</td>
-              <td>{{ article.nom }}</td>
-              <td>{{ article.prix_unitaire }}</td>
-              <td>{{ article.stock }}</td>
-              <td>{{ article.categorie.nom }}</td>
-              <td>{{ article.tva.taux_tva }} %</td>
-              <td>
-                  <!-- Lien pour rediriger vers la page d'édition de l'article -->
-                  <a href="{% url 'update_article' article.id %}" class="btn btn-sm btn-icon">
-                      <i class="fas fa-edit" style="font-size: 20px; color: green;"></i>
-                  </a>
+<!-- Formulaire de suppression des articles sélectionnés -->
+<form id="deleteSelectedForm" method="POST" action="{% url 'delete_articles' %}" style="margin-left: 2px; display: inline;">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger mb-3 btn-icon">
+        <i class="fas fa-trash"></i> <i class="fa-solid fa-check"></i>
+    </button>
+    <input type="hidden" id="selectedArticles" name="selected_articles">
+</form>
 
-                  <!-- Lien pour afficher les détails de l'article -->
-                  <a href="{% url 'afficher_article' article.id %}" class="btn btn-sm btn-icon">
-                      <i class="fas fa-eye" style="font-size: 20px; color: blue;"></i>
-                  </a>
-
-                  <!-- Lien pour supprimer un article -->
-                  <a href="{% url 'delete_article' article.id %}" class="btn btn-sm btn-icon" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet article ?');">
-                      <i class="fas fa-trash-alt" style="font-size: 20px; color: #dc3545;"></i>
-                  </a>
-              </td>
-          </tr>
-          {% empty %}
-          <tr>
-              <td colspan="7" class="text-center">Aucun article disponible.</td>
-          </tr>
-          {% endfor %}
-      </tbody>
-  </table>
+<div class="table-responsive" style="font-size: 8pt; font-family: Verdana, sans-serif;">
+    <table id="articleTable" class="table table-striped" style="font-size: 11px; border-collapse: collapse; width: 100%;">
+        <thead style="background-color: #581845; color: #FFFFFF; font-size: 11pt; font-weight: bold;">
+            <tr>
+                <th style="padding: 5px; height: 40px; width: 30px;">
+                    <input type="checkbox" id="selectAll" title="Tout sélectionner" />
+                </th>
+                <th style="padding: 5px; height: 40px;">Code</th>
+                <th style="padding: 5px; height: 40px;">Nom</th>
+                <th style="padding: 5px; height: 40px;">Prix Unitaire</th>
+                <th style="padding: 5px; height: 40px;">Stock</th>
+                <th style="padding: 5px; height: 40px;">Catégorie</th>
+                <th style="padding: 5px; height: 40px;">TVA</th>
+                <th style="padding: 5px; height: 40px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for article in articles %}
+            <tr style="border-bottom: 1px solid #ccc;">
+                <td style="padding: 1px; text-align: center;">
+                    <input type="checkbox" name="selected_articles" value="{{ article.id }}" />
+                </td>
+                <td style="padding: 1px;">{{ article.code_article }}</td>
+                <td style="padding: 1px;">{{ article.nom }}</td>
+                <td style="padding: 1px;">{{ article.prix_unitaire }}</td>
+                <td style="padding: 1px;">{{ article.stock }}</td>
+                <td style="padding: 1px;">{{ article.categorie.nom }}</td>
+                <td style="padding: 1px;">{{ article.tva.taux_tva }}</td>
+                <td style="padding: 1px;">
+                    <!-- Boutons d'actions -->
+                    <a href="{% url 'afficher_article' article.id %}" style="color: blue; text-decoration: none; font-size: 12pt;">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                    <a href="{% url 'update_article' article.id %}" style="color: orange; text-decoration: none; font-size: 12pt;">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="{% url 'delete_article' article.id %}" style="color: red; text-decoration: none; font-size: 12pt;">
+                        <i class="fas fa-trash"></i>
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9" class="text-center">Aucun article trouvé.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 
-{% block extra_js %}
+
 <script>
-$(document).ready(function() {
-    $('#articlesTable').DataTable({
-        dom: 'Bfrtip',
-        buttons: [
-        {
-                extend: 'excelHtml5',
-                text: 'Exporter XLS',
-                text: '<i class="fas fa-file-excel btn-no-border btn-icon" style="font-size: 40px; color: green; border: none; background: none;"></i>',
-                exportOptions: {
-                    columns: [0, 1, 2, 3, 4, 5] // Exclut la colonne "Actions"
-                }
-            },
-            {
-                text: '<i class="fas fa-file-pdf btn-no-border btn-icon" style="font-size: 40px; color: red;"></i>',
-                action: function ( e, dt, node, config ) {
-                    generatePDF();
-                }
-            },
-            {
-                extend: 'print',
-                text: '<i class="fas fa-print btn-no-border btn-icon" style="font-size: 40px; color: blue;"></i>',
-                title: 'Liste des Articles',
-                customize: function (win) {
-                    $(win.document.body).find('table').find('tr').each(function() {
-                        $(this).find('td:last-child, th:last-child').remove();
-                    });
-                }
-            }
-        ]
-    });
-
-    function generatePDF() {
-        var table = document.getElementById("articlesTable");
-        var bodyData = [];
-        var headers = [];
-        for (var i = 0; i < table.rows[0].cells.length - 1; i++) {
-            headers.push({ text: table.rows[0].cells[i].innerText, bold: true });
-        }
-        bodyData.push(headers);
-
-        for (var i = 1; i < table.rows.length; i++) {
-            var rowData = [];
-            for (var j = 0; j < table.rows[i].cells.length - 1; j++) {
-                rowData.push({ text: table.rows[i].cells[j].innerText });
-            }
-            bodyData.push(rowData);
-        }
-
-        var docDefinition = {
-            content: [
-                { text: 'Liste des Articles', style: 'header' },
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialize DataTable
+        $('#articleTable').DataTable({
+            dom: 'Bfrtip',
+            buttons: [
                 {
-                    table: {
-                        headerRows: 1,
-                        body: bodyData
+                    extend: 'excelHtml5',
+                    text: '<i class="fas fa-file-excel" style="font-size: 20px; color: green;"></i>',
+                    exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6, 7] }
+                },
+                {
+                    extend: 'pdfHtml5',
+                    text: '<i class="fas fa-file-pdf" style="font-size: 20px; color: red;"></i>',
+                    exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6, 7] }
+                },
+                {
+                    extend: 'print',
+                    text: '<i class="fas fa-print" style="font-size: 20px; color: blue;"></i>',
+                    title: 'Liste des Articles',
+                    customize: function (win) {
+                        $(win.document.body).find('table').addClass('display').css('font-size', '12px');
+                        $(win.document.body).find('table tr:last-child td').remove(); // Supprimer la colonne actions
                     }
                 }
             ],
-            styles: {
-                header: {
-                    fontSize: 18,
-                    bold: true,
-                    alignment: 'center',
-                    margin: [0, 0, 0, 10]
-                }
+            initComplete: function () {
+                $('#searchInput').on('keyup', function () {
+                    article.search(this.value).draw();
+                });
+            },
+            language: {
+                url: "/static/js/lang/French.json"
+            },
+            //order: [[8, 'desc']], // Trier par Code par défaut
+            columnDefs: [
+                { orderable: false, targets: -1 } // Désactiver le tri sur la colonne "Actions"
+            ]
+        });
+    
+        // Gestion de la case à cocher "Tout sélectionner" pour les articles
+        document.getElementById('selectAll').addEventListener('change', function () {
+            const isChecked = this.checked;
+            const checkboxes = document.querySelectorAll('input[name="selected_articles"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+        });
+    
+        const deleteForm = document.getElementById('deleteSelectedForm');
+    
+        // Suppression des articles sélectionnés (plusieurs articles)
+        deleteForm.addEventListener('submit', function (event) {
+            event.preventDefault(); // Empêche l'envoi par défaut du formulaire
+    
+            const selected = Array.from(document.querySelectorAll('input[name="selected_articles"]:checked'))
+                .map(checkbox => checkbox.value); // Récupère les IDs des articles sélectionnés
+    
+            if (selected.length === 0) {
+                alert('Veuillez sélectionner au moins un article.');
+                return;
             }
-        };
-        pdfMake.createPdf(docDefinition).download('Liste_Articles.pdf');
-    }
-});
+    
+            // Demande de confirmation avant de supprimer
+            const confirmation = confirm("Êtes-vous sûr de vouloir supprimer ces articles ? Cette action est irréversible.");
+            if (!confirmation) {
+                return; // Si l'utilisateur annule, on arrête l'exécution
+            }
+    
+            // Définit la valeur du champ caché avec la liste des IDs des articles
+            document.getElementById('selectedArticles').value = selected.join(',');
+    
+            // Envoi de la requête POST avec Fetch API
+            fetch(deleteForm.action, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: new URLSearchParams(new FormData(deleteForm)).toString()
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert(data.message); // Affiche le message de succès
+                        window.location.href = '/articles/'; // Redirige vers la page de la liste des articles
+                    } else {
+                        alert(data.message); // Affiche le message d'erreur ou d'avertissement
+                    }
+                })
+                .catch(error => {
+                    alert('Une erreur est survenue. Veuillez réessayer.');
+                    console.error('Erreur:', error);
+                });
+        });
+    });
+
+    const selectOperator = document.querySelector('select[name="operator"]');
+    const rangeInputs = document.getElementById('range-inputs');
+
+    selectOperator.addEventListener('change', () => {
+        if (selectOperator.value === 'range') {
+            rangeInputs.style.display = 'block';
+        } else {
+            rangeInputs.style.display = 'none';
+        }
+    });
 </script>
-{% endblock %}
+
 {% endblock %}

@@ -4,34 +4,161 @@
 
 {% block content %}
 
-<!-- Bouton pour ouvrir le formulaire d'ajout de facture -->
-<a href="{% url 'create_facture' %}" class="btn btn-primary mb-3 btn-icon">
-    <i class="fas fa-plus"></i> Facture
-</a>
+<h1 style="text-align: center; margin-bottom: 5px;">Liste des Factures</h1>
+<hr style="border: 1px solid black; width: 100%; margin-bottom: 5px;">
 
-<!-- Formulaire de suppression des factures sélectionnées -->
-<form id="deleteSelectedForm" method="POST" action="{% url 'delete_factures' %}" style="display: inline;">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-danger mb-3 btn-icon">
-        <i class="fas fa-trash"></i> Supprimer Sélectionnées
-    </button>
-    <input type="hidden" id="selectedFactures" name="selected_factures">
-</form>
+{% if show_search %}
+<!-- Formulaire de recherche avec cadre à angles arrondis -->
+<div style="background-color: #f9f9f9; padding: 5px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); width: 100%; margin: 0 auto;">
+    <h3 style="text-align: left; font-size: 14px; font-weight: bold; color: red; margin-bottom: 5px;">Recherche Multicritère</h3>
+    <form method="GET" action="{% url 'list_facture_rechMultc' %}" class="mb-3">
+        <div class="row d-flex align-items-center">
+            <div class="col-md-3" style="margin-bottom: 15px;">
+                <label for="field" class="form-label" style="color:#007bff">Champ</label>
+                <select name="field" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;">
+                    <option value="numero_facture">Numéro de Facture</option>
+                    <option value="date_facture">Date de Facture</option>
+                    <option value="client__nom">Client</option>
+                    <option value="total_ht">Total HT</option>
+                    <option value="total_tva">Total TVA</option>
+                    <option value="total_ttc">Total TTC</option>
+                    <option value="compte">Compte</option>
+                    <option value="etat">État</option>
+                </select>
+            </div>
+            <div class="col-md-3" style="margin-bottom: 15px;">
+                <label for="operator" class="form-label" style="color:#007bff">Opérateur</label>
+                <select name="operator" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;">
+                    <option value="exact">Égal à</option>
+                    <option value="icontains">Contient</option>
+                    <option value="gt">Supérieur à</option>
+                    <option value="lt">Inférieur à</option>
+                    <option value="neq">Différent de</option>
+                    <option value="lte">Inférieur ou égal à</option>
+                    <option value="gte">Supérieur ou égal à</option>
+                    <option value="range">Valeur comprise entre</option>
+                </select>
+            </div>
+            <div class="col-md-3" style="margin-bottom: 15px;">
+                <label for="value" class="form-label" style="color:#007bff">Valeur</label>
+                <input type="text" name="value" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;" />
+                <div id="range-inputs" style="display: none;">
+                    <input type="number" name="range_min" placeholder="Borne inférieure" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;">
+                    <input type="number" name="range_max" placeholder="Borne supérieure" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;">
+                </div>
+            </div>
+
+
+            <div class="col-md-3" style="margin-bottom: 15px;">
+                <label for="logical_operator" class="form-label"style="color:red">Opérateur Logique</label>
+                <select name="logical_operator" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;">
+                    <option value="and">ET</option>
+                    <option value="or">OU</option>
+                </select>
+            </div>
+            
+
+
+            <!-- Deuxième critère de recherche -->
+            <div class="col-md-3" style="margin-bottom: 15px;">
+                <label for="field2" class="form-label" style="color:#007bff">Deuxième Champ</label>
+                <select name="field2" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;">
+                    <option value="numero_facture">Numéro de Facture</option>
+                    <option value="date_facture">Date de Facture</option>
+                    <option value="client__nom">Client</option>
+                    <option value="total_ht">Total HT</option>
+                    <option value="total_tva">Total TVA</option>
+                    <option value="total_ttc">Total TTC</option>
+                    <option value="compte">Compte</option>
+                    <option value="etat">État</option>
+                </select>
+            </div>
+
+            <div class="col-md-3" style="margin-bottom: 15px;">
+                <label for="operator2" class="form-label" style="color:#007bff">Deuxième Opérateur</label>
+                <select name="operator2" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;">
+                    <option value="exact">Égal à</option>
+                    <option value="icontains">Contient</option>
+                    <option value="gt">Supérieur à</option>
+                    <option value="lt">Inférieur à</option>
+                    <option value="neq">Différent de</option>
+                    <option value="lte">Inférieur ou égal à</option>
+                    <option value="gte">Supérieur ou égal à</option>
+                    <option value="range">Valeur comprise entre</option>
+                </select>
+            </div>
+            <div class="col-md-3" style="margin-bottom: 15px;">
+                <label for="value2" class="form-label" style="color:#007bff">Deuxième Valeur</label>
+                <input type="text" name="value2" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;" />
+            </div>
+            
+            <div class="col-md-3" style="margin-bottom: 15px;">
+                <button type="submit" class="btn btn-success mt-4" style="background-color: #007bff; border: none; padding: 10px 20px; font-size: 16px; cursor: pointer;">
+                    <i class="fas fa-search"></i> Rechercher
+                </button>
+            </div>
+        </div>
+        <input type="hidden" name="show_search" value="true">
+    </form>
+    
+    <hr style="border: 1px solid black; width: 100%; margin-bottom: 5px;">
+
+</div>
+{% endif %}
+
+
+
+<div class="inline" style="display: flex; align-items: center;">
+    <a href="{% url 'list_factures' %}" class="btn btn-secondary mb-3 btn-icon" style="margin-left: 2px; background-color: #955251;">
+        <i class="fas fa-sync-alt"></i>
+    </a>
+    
+     
+    <a href="{% url 'create_facture' %}" class="btn btn-primary mb-3 btn-icon" style="margin-left: 2px;">
+        <i class="fas fa-plus"></i> Facture
+    </a>
+    <form id="deleteSelectedForm" method="POST" action="{% url 'delete_factures' %}" style="display: inline; margin-left: 2px;">
+        {% csrf_token %}
+        <button type="submit" class="btn mb-3 btn-icon" style="background-color: #e70909; color: white; margin-left: 2px;">
+            <i class="fas fa-trash"></i> <i class="fa-solid fa-check"></i>
+        </button>
+        </button>
+        <!-- Bouton pour imprimer les factures sélectionnées -->
+
+        <input type="hidden" id="selected_factures" name="selected_factures">
+    </form>
+    <form id="printSelectedForm" method="post" action="{% url 'print_factures' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn mb-3 btn-icon" Style="background-color:#239B56; color: white; margin-left: 2px;">
+            <i class="fas fa-print"></i> <i class="fa-solid fa-check"></i>
+        </button>
+        <input type="hidden" id="facture_ids" name="facture_ids">
+
+        <!-- Refresh button -->
+   
+    </form>
+
+</div>
+
 
 <div class="table-responsive" style="font-size: 8pt; font-family: Verdana, sans-serif;">
-    <table id="factureTable" class="table table-striped" style="border-collapse: collapse; width: 100%;">
-        <thead style="background-color:green; color: #FFFFFF; font-size: 12pt; font-weight: bold;">
+    <table id="factureTable" class="table table-striped" style="font-size: 11px; border-collapse: collapse; width: 100%;">
+        <thead style="background-color: #581845; color: #FFFFFF; font-size: 11pt; font-weight: bold;">
             <tr>
                 <th style="padding: 5px; height: 40px; width: 30px;">
                     <input type="checkbox" id="selectAll" title="Tout sélectionner" />
-                </th>           
+                    <input type="hidden" id="selected_factures" name="selected_factures">
+
+                </th>
                 <th style="padding: 5px; height: 40px;">No</th>
                 <th style="padding: 5px; height: 40px;">Date</th>
                 <th style="padding: 5px; height: 40px;">Client</th>
                 <th style="padding: 5px; height: 40px;">Tot. HT</th>
                 <th style="padding: 5px; height: 40px;">Tot. TVA</th>
                 <th style="padding: 5px; height: 40px;">Tot. TTC</th>
+                <th style="padding: 5px; height: 40px;">Compte</th>
                 <th style="padding: 5px; height: 40px;">État</th>
+
                 <th style="padding: 5px; height: 40px;">Actions</th>
             </tr>
         </thead>
@@ -42,30 +169,28 @@
                     <input type="checkbox" name="selected_factures" value="{{ facture.id }}" />
                 </td>
                 <td style="padding: 1px;">{{ facture.numero_facture }}</td>
-                <td style="padding: 1px;">{{ facture.date_facture }}</td>
+                <td style="padding: 1px;">{{ facture.date_facture|date:"d/m/Y" }}</td>
                 <td style="padding: 1px;">{{ facture.client.nom }}</td>
                 <td style="padding: 1px;">{{ facture.total_ht }}</td>
                 <td style="padding: 1px;">{{ facture.total_tva }}</td>
                 <td style="padding: 1px;">{{ facture.total_ttc }}</td>
+                <td style="padding: 1px;">{{ facture.client.compte }}</td>
+
                 <td style="padding: 1px;">{{ facture.etat }}</td>
                 <td style="padding: 1px;">
-                    <!-- Bouton Afficher -->
+                    <!-- Boutons d'actions -->
                     <a href="{% url 'afficher_facture' facture.id %}" style="color: blue; text-decoration: none; font-size: 12pt;">
-                        <i class="fas fa-eye"></i> 
+                        <i class="fas fa-eye"></i>
                     </a>
-                    <!-- Bouton Modifier -->
                     <a href="{% url 'modifier_facture' facture.id %}" style="color: orange; text-decoration: none; font-size: 12pt;">
                         <i class="fas fa-edit"></i>
                     </a>
-                    <!-- Bouton Supprimer avec confirmation -->
                     <a href="{% url 'delete_facture' facture.id %}" style="color: red; text-decoration: none; font-size: 12pt;">
                         <i class="fas fa-trash"></i>
                     </a>
-                    <!-- Bouton Télécharger PDF -->
-                    <a href="{% url 'generate_facture_pdf' facture.id %}" style="color: Purple; text-decoration: none; font-size: 12pt;">
+                    <a href="{% url 'generate_facture_pdf' facture.id %}" style="color: purple; text-decoration: none; font-size: 12pt;">
                         <i class="fas fa-file-pdf"></i>
                     </a>
-                  
                 </td>
             </tr>
             {% empty %}
@@ -78,34 +203,83 @@
 </div>
 
 <script>
-    // Gestion de la case à cocher "Tout sélectionner" pour les factures
-    document.getElementById('selectAll').addEventListener('change', function () {
-        const isChecked = this.checked;
-        const checkboxes = document.querySelectorAll('input[name="selected_factures"]');
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = isChecked;
-        });
-    });
-    
-    document.addEventListener('DOMContentLoaded', function () {
-        const deleteForm = document.getElementById('deleteSelectedForm');
-        
-        // Suppression des factures sélectionnées (plusieurs factures)
-        deleteForm.addEventListener('submit', function (event) {
-            event.preventDefault();  // Empêche l'envoi par défaut du formulaire
-            
-            const selected = Array.from(document.querySelectorAll('input[name="selected_factures"]:checked'))
-                .map(checkbox => checkbox.value);  // Récupère les IDs des factures sélectionnées
-    
-            if (selected.length === 0) {
-                alert('Veuillez sélectionner au moins une facture.');
-                return;
+document.addEventListener('DOMContentLoaded', function () {
+    // === Initialisation de DataTable ===
+    const factureTable = $('#factureTable').DataTable({
+        dom: 'Bfrtip',
+        buttons: [
+            {
+                extend: 'excelHtml5',
+                text: '<i class="fas fa-file-excel" style="font-size: 20px; color: green;"></i>',
+                exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6, 7, 8] }
+            },
+            {
+                extend: 'pdfHtml5',
+                text: '<i class="fas fa-file-pdf" style="font-size: 20px; color: red;"></i>',
+                exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6, 7, 8] }
+            },
+            {
+                extend: 'print',
+                text: '<i class="fas fa-print" style="font-size: 20px; color: blue;"></i>',
+                title: 'Liste des Factures',
+                customize: function (win) {
+                    $(win.document.body).find('table').addClass('display').css('font-size', '12px');
+                    $(win.document.body).find('table tr:last-child td').remove(); // Supprime la colonne "Actions"
+                }
             }
+        ],
+        initComplete: function () {
+            $('#searchInput').on('keyup', function () {
+                factureTable.search(this.value).draw();
+            });
+        },
+        language: {
+            url: "/static/js/lang/French.json"
+        },
+        //order: [[1, 'asc']],
+        columnDefs: [
+            { orderable: false, targets: -1 }
+        ]
+    });
+
+    // Gérer la sélection globale des lignes sur toutes les pages
+    $('#selectAll').on('change', function () {
+        const isChecked = $(this).prop('checked');
+        const table = $('#factureTable').DataTable();
+
+        if (isChecked) {
+            // Sélectionner toutes les lignes sur toutes les pages
+            table.rows().nodes().to$().find('input[name="selected_factures"]').prop('checked', true);
+        } else {
+            // Désélectionner toutes les lignes sur toutes les pages
+            table.rows().nodes().to$().find('input[name="selected_factures"]').prop('checked', false);
+        }
+    });
+
+
+
+
     
-            // Définit la valeur du champ caché avec la liste des IDs des factures
-            document.getElementById('selectedFactures').value = selected.join(',');
+
+
+
     
-            // Envoi de la requête POST avec Fetch API
+    // === Suppression des factures sélectionnées ===
+    const deleteForm = document.getElementById('deleteSelectedForm');
+    deleteForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        const selected = Array.from(document.querySelectorAll('input[name="selected_factures"]:checked'))
+            .map(checkbox => checkbox.value);
+
+        if (selected.length === 0) {
+            alert('Veuillez sélectionner au moins une facture.');
+            return;
+        }
+
+        if (confirm("Êtes-vous sûr de vouloir supprimer les factures sélectionnées ?")) {
+            document.getElementById('selected_factures').value = selected.join(',');
+
             fetch(deleteForm.action, {
                 method: 'POST',
                 headers: {
@@ -114,66 +288,152 @@
                 },
                 body: new URLSearchParams(new FormData(deleteForm)).toString()
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    alert(data.message);  // Affiche le message de succès
-                    window.location.href = '/factures/';  // Redirige vers la page de la liste des factures
-                } else {
-                    alert(data.message);  // Affiche le message d'erreur ou d'avertissement
-                }
-            })
-            .catch(error => {
-                alert('Une erreur est survenue. Veuillez réessayer.');
-                console.error('Erreur:', error);
-            });
-        });
-    
-        // Suppression d'une seule facture via le bouton "delete-btn"
-        const deleteButtons = document.querySelectorAll('.delete-btn');
-        deleteButtons.forEach(button => {
-            button.addEventListener('click', function () {
-                const selectedId = this.dataset.id;  // Récupère l'ID de la facture
-    
-                if (confirm("Êtes-vous sûr de vouloir supprimer cette facture ?")) {
-                    fetch('/factures/delete/', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': getCookie('csrftoken'), // CSRF token pour la requête sécurisée
-                        },
-                        body: JSON.stringify({ selected_factures: selectedId })
-                    })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert(data.message);
+                        window.location.reload();
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('Une erreur est survenue. Veuillez réessayer.');
+                    console.error('Erreur:', error);
+                });
+        }
+    });
+
+    // === Suppression d'une facture individuelle ===
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            const selectedId = this.dataset.id;
+
+            if (confirm("Êtes-vous sûr de vouloir supprimer cette facture ?")) {
+                fetch('/facture/delete/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ selected_factures: selectedId })
+                })
                     .then(response => response.json())
                     .then(data => {
                         if (data.status === 'success') {
                             alert(data.message);
-                            window.location.href = '/factures/';  // Redirige vers la page de la liste des factures
+                            window.location.reload();
                         } else {
                             alert(data.message);
                         }
                     })
                     .catch(error => console.error('Erreur:', error));
-                }
-            });
+            }
         });
-    
-        // Fonction pour obtenir le CSRF token
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
+    });
+
+    // Fonction pour obtenir le CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
                 }
             }
-            return cookieValue;
+        }
+        return cookieValue;
+    }
+});
+
+
+
+ // === Gestion de la sélection multiple ===
+ document.getElementById('selectAll').addEventListener('change', function () {
+        const isChecked = this.checked;
+        const checkboxes = document.querySelectorAll('input[name="selected_factures"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = isChecked;
+        });
+    });
+
+
+ 
+
+    // === Impression des factures sélectionnées ===
+   $('#printSelectedForm').on('submit', function (event) {
+    event.preventDefault();
+
+    const selectedCheckboxes = $('input[name="selected_factures"]');
+    const selectedIDs = [];
+
+    // Parcourir toutes les lignes et collecter les valeurs des IDs
+    selectedCheckboxes.each((index, checkbox) => {
+        if ($(checkbox).is(':checked')) {
+            selectedIDs.push($(checkbox).val());
         }
     });
-</script>
+
+    console.log("IDs sélectionnés sur toutes les pages :", selectedIDs);
+
+    if (selectedIDs.length === 0) {
+        alert('Veuillez sélectionner au moins une facture.');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('facture_ids', selectedIDs.join(','));
+
+    fetch('/facture/print/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.blob())
+    .then(blob => {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'factures_selectionnees.pdf';
+        link.click();
+    })
+    .catch(error => console.error('Erreur:', error));
+});
+
+// Fonction pour obtenir le CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+
+
+
+const selectOperator = document.querySelector('select[name="operator"]');
+    const rangeInputs = document.getElementById('range-inputs');
+
+    selectOperator.addEventListener('change', () => {
+        if (selectOperator.value === 'range') {
+            rangeInputs.style.display = 'block';
+        } else {
+            rangeInputs.style.display = 'none';
+        }
+    });
+
+</script>    
 
 {% endblock %}

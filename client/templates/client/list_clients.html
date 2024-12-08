@@ -3,131 +3,197 @@
 {% block title %}Liste des Clients{% endblock %}
 
 {% block content %}
+<h1 style="text-align: center; margin-bottom: 5px;">Liste des Clients</h1>
+<hr style="border: 1px solid black; width: 100%; margin-bottom: 5px;">
 
-<!-- Bouton pour ajouter un client -->
-<a href="{% url 'create_client' %}" class="btn btn-primary mb-3 btn-icon">
-    <i class="fas fa-plus"></i> Client
-</a>
 
-<div class="table-responsive">
-    <table id="clientsTable" class="table table-striped">
-        <thead style="background-color:green ; color: #FFFFFF;">
+{% if show_search %}
+<!-- Formulaire de recherche pour clients -->
+<!-- Formulaire de recherche avec cadre à angles arrondis -->
+<div style="background-color: #f9f9f9; padding: 5px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); width: 100%; margin: 0 auto;">
+    <h3 style="text-align: left; font-size: 14px; font-weight: bold; color: red; margin-bottom: 5px;">Recherche Multicritère</h3>
+    <form method="GET" action="{% url 'client_list_rechMultc' %}" class="mb-3">
+        <div class="row d-flex align-items-center">
+            <div class="col-md-3" style="margin-bottom: 15px;">
+                <label for="field" class="form-label">Champ</label>
+                <select name="field" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;">
+                    <option value="code_client">Code Client</option>
+                    <option value="nom">Nom</option>
+                    <option value="ville">Ville</option>
+                    <option value="compte">Compte</option>
+                </select>
+            </div>
+            <div class="col-md-3" style="margin-bottom: 15px;">
+                <label for="operator" class="form-label">Opérateur</label>
+                <select name="operator" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;">
+                    <option value="exact">Égal à</option>
+                    <option value="icontains">Contient</option>
+                    <option value="gt">Supérieur à</option>
+                    <option value="lt">Inférieur à</option>
+                    <option value="neq">Différent de</option>
+                    <option value="lte">Inférieur ou égal à</option>
+                    <option value="gte">Supérieur ou égal à</option>
+                    <option value="range">Valeur comprise entre</option>
+                </select>
+            </div>
+            <div class="col-md-3" style="margin-bottom: 15px;">
+                <label for="value" class="form-label">Valeur</label>
+                <input type="text" name="value" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;" />
+                <div id="range-inputs" style="display: none;">
+                    <input type="number" name="range_min" placeholder="Borne inférieure" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;">
+                    <input type="number" name="range_max" placeholder="Borne supérieure" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;">
+                </div>
+            </div>
+            <div class="col-md-3" style="margin-bottom: 15px;">
+                <button type="submit" class="btn btn-success mt-4" style="background-color: #007bff; border: none; padding: 10px 20px; font-size: 16px; cursor: pointer;">
+                    <i class="fas fa-search"></i> Rechercher
+                </button>
+            </div>
+        </div>
+        <input type="hidden" name="show_search" value="true">
+    </form>
+    
+    <hr style="border: 1px solid black; width: 100%; margin-bottom: 5px;">
+
+</div>
+
+{% endif %}
+
+
+
+<!-- Bouton pour ouvrir le formulaire d'ajout de client -->
+<div style="display: inline-flex; align-items: center;">
+    <a href="{% url 'list_clients' %}" class="btn btn-secondary mb-3 btn-icon" style="margin-left: 2px; background-color: #955251;">
+        <i class="fas fa-sync-alt"></i>
+    </a>
+    <a href="{% url 'create_client' %}" class="btn btn-primary mb-3 btn-icon" style="margin-left: 2px;">
+        <i class="fas fa-plus"></i> Client
+    </a>
+
+    <!-- Formulaire de suppression des clients sélectionnés -->
+    <form id="deleteSelectedClientsForm" method="POST" action="{% url 'delete_clients' %}" style="margin-left: 2px; display: inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger mb-3 btn-icon">
+            <i class="fas fa-trash"></i> <i class="fa-solid fa-check"></i>
+        </button>
+        <input type="hidden" id="selectedClients" name="selected_clients">
+    </form>
+</div>
+
+
+<div class="table-responsive" style="font-size: 8pt; font-family: Verdana, sans-serif;">
+    <table id="clientTable" class="table table-striped" style="font-size: 11px; border-collapse: collapse; width: 100%;">
+        <thead style="background-color: #581845; color: #FFFFFF; font-size: 11pt; font-weight: bold;">
             <tr>
-                <th>Code Client</th>
-                <th>Nom</th>
-                <th>Email</th>
-                <th>Téléphone</th>
-                <th>Actions</th>
+                <th style="padding: 5px; height: 40px; width: 30px;">
+                    <input type="checkbox" id="selectAllClients" title="Tout sélectionner" />
+                </th>
+                <th style="padding: 5px; height: 40px;">Code Client</th>
+                <th style="padding: 5px; height: 40px;">Nom</th>
+                <th style="padding: 5px; height: 40px;">Email</th>
+                <th style="padding: 5px; height: 40px;">Ville</th>
+                <th style="padding: 5px; height: 40px;">Téléphone</th>
+
+                <th style="padding: 5px; height: 40px;">Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for client in clients %}
-            <tr>
-                <td>{{ client.code_client }}</td>
-                <td>{{ client.nom }}</td>
-                <td>{{ client.email }}</td>
-                <td>{{ client.telephone }}</td>
-                <td>
-                    <!-- Lien pour afficher les détails du client -->
-                    <a href="{% url 'afficher_client' client.pk %}" class="btn btn-sm btn-icon" style="background: none; border: none; padding: 0; cursor: pointer;">
-                        <i class="fas fa-eye" style="font-size: 20px; color: #17a2b8;"></i> <!-- Cyan pour voir -->
-                    </a>
+            <tr style="border-bottom: 1px solid #ccc;">
+                <td style="padding: 1px; text-align: center;">
+                    <input type="checkbox" name="selected_clients" value="{{ client.id }}" />
+                </td>
+                <td style="padding: 1px;">{{ client.code_client }}</td>
+                <td style="padding: 1px;">{{ client.nom }}</td>
+                <td style="padding: 1px;">{{ client.email }}</td>
+                <td style="padding: 1px;">{{ client.ville }}</td>
 
-                    <!-- Lien pour éditer un client -->
-                    <a href="{% url 'update_client' client.pk %}" class="btn btn-sm btn-icon" style="background: none; border: none; padding: 0; cursor: pointer;">
-                        <i class="fas fa-edit" style="font-size: 20px; color: green;"></i> <!-- Vert pour modifier -->
+                <td style="padding: 1px;">{{ client.telephone }}</td>
+                <td style="padding: 1px;">
+                    <!-- Boutons d'actions -->
+                    <a href="{% url 'afficher_client' client.id %}" style="color: blue; text-decoration: none; font-size: 12pt;">
+                        <i class="fas fa-eye"></i>
                     </a>
-
-                    <!-- Lien pour supprimer un client -->
-                    <a href="{% url 'delete_client' client.pk %}" class="btn btn-sm btn-icon" style="background: none; border: none; padding: 0; cursor: pointer;">
-                        <i class="fas fa-trash-alt" style="font-size: 20px; color: #dc3545;"></i> <!-- Rouge pour supprimer -->
+                    <a href="{% url 'update_client' client.id %}" style="color: orange; text-decoration: none; font-size: 12pt;">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="{% url 'delete_client' client.id %}" style="color: red; text-decoration: none; font-size: 12pt;">
+                        <i class="fas fa-trash"></i>
                     </a>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="5" class="text-center">Aucun client trouvé.</td>
+                <td colspan="7" class="text-center">Aucun client trouvé.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
 
-{% block extra_js %}
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css">
+
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+
 <script>
-$(document).ready(function() {
-    $('#clientsTable').DataTable({
+
+$(document).ready(function () {
+    $('#clientTable').DataTable({
         dom: 'Bfrtip',
         buttons: [
             {
                 extend: 'excelHtml5',
-                text: 'Exporter XLS',
-                text: '<i class="fas fa-file-excel btn-no-border btn-icon" style="font-size: 40px; color: green; border: none; background: none;"></i>',
-                exportOptions: {
-                    columns: [0, 1, 2, 3]
-                }
+                text: '<i class="fas fa-file-excel" style="font-size: 20px; color: green;"></i>',
+                exportOptions: { columns: [0, 1, 2, 3, 4] }
             },
             {
-                text: '<i class="fas fa-file-pdf btn-no-border btn-icon" style="font-size: 40px; color: red;"></i>',
-                action: function (e, dt, node, config) {
-                    generatePDF();
-                }
+                extend: 'pdfHtml5',
+                text: '<i class="fas fa-file-pdf" style="font-size: 20px; color: red;"></i>',
+                exportOptions: { columns: [0, 1, 2, 3, 4] }
             },
             {
                 extend: 'print',
-                text: '<i class="fas fa-print btn-no-border btn-icon" style="font-size: 40px; color: blue;"></i>',
+                text: '<i class="fas fa-print" style="font-size: 20px; color: blue;"></i>',
                 title: 'Liste des Clients',
                 customize: function (win) {
-                    $(win.document.body).find('table').find('tr').each(function() {
-                        $(this).find('td:last-child, th:last-child').remove();
-                    });
+                    $(win.document.body).find('table').addClass('display').css('font-size', '12px');
+                    $(win.document.body).find('table thead th:last-child, table tbody td:last-child').hide();
                 }
             }
+        ],
+        initComplete: function () {
+            console.log("DataTable initialized successfully!");
+        },
+        language: {
+            url: "/static/js/lang/French.json"
+        },
+        columnDefs: [
+            { orderable: false, targets: -1 }
         ]
     });
-
-    function generatePDF() {
-        var table = document.getElementById("clientsTable");
-        var bodyData = [];
-
-        var headers = [];
-        for (var i = 0; i < table.rows[0].cells.length - 1; i++) {
-            headers.push({ text: table.rows[0].cells[i].innerText, bold: true });
-        }
-        bodyData.push(headers);
-
-        for (var i = 1; i < table.rows.length; i++) {
-            var rowData = [];
-            for (var j = 0; j < table.rows[i].cells.length - 1; j++) {
-                rowData.push({ text: table.rows[i].cells[j].innerText });
-            }
-            bodyData.push(rowData);
-        }
-
-        var docDefinition = {
-            content: [
-                { text: 'Liste des Clients', style: 'header' },
-                {
-                    table: {
-                        headerRows: 1,
-                        body: bodyData
-                    }
-                }
-            ],
-            styles: {
-                header: {
-                    fontSize: 18,
-                    bold: true,
-                    alignment: 'center',
-                    margin: [0, 0, 0, 10]
-                }
-            }
-        };
-
-        pdfMake.createPdf(docDefinition).download('Liste_Clients.pdf');
-    }
 });
+
+const selectOperator = document.querySelector('select[name="operator"]');
+    const rangeInputs = document.getElementById('range-inputs');
+
+    selectOperator.addEventListener('change', () => {
+        if (selectOperator.value === 'range') {
+            rangeInputs.style.display = 'block';
+        } else {
+            rangeInputs.style.display = 'none';
+        }
+    });
+
+
+
+
+    
 </script>
-{% endblock %}
 
 {% endblock %}

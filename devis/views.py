@@ -14,15 +14,6 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from decimal import Decimal, InvalidOperation
-
-from django.shortcuts import get_object_or_404
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-from django.http import HttpResponse
-from decimal import Decimal
-from devis.models import Devis
-from tva.models import TVA
-from facture.models import Facture
 from django.template.loader import render_to_string
 from django.db.models import Max
 
@@ -154,7 +145,6 @@ def generate_devis_pdf(request, devis_id):
     # Affichez le détail de la TVA par taux
     y -= 30
     pdf.setFont("Helvetica-Bold", 12)
-    pdf.drawString(x, y, "TVA Breakdown by Rate")
     y -= 20
 
     for rate, amounts in tva_totals.items():
@@ -162,6 +152,8 @@ def generate_devis_pdf(request, devis_id):
         pdf.drawString(x + 150, y, f"Base: {amounts['base']:.3f}")
         pdf.drawString(x + 300, y, f"Mont. TVA : {amounts['tva_amount']:.3f}")
         y -= 20
+    pdf.line(x, y+10 , width - 50, y+10 )
+    y -= 20
 
     # Dessinez les totaux sur la dernière page
     if y < 100:  # Vérifiez s'il reste de l'espace pour les totaux
@@ -244,8 +236,9 @@ def create_devis(request):
         'formset': formset,
     }
     return render(request, 'devis/create_devis.html', context)  # Render a template for creating quotes
+
 def list_devis(request):
-    devis = Devis.objects.all()  # Fetch all invoices
+    devis = Devis.objects.all().order_by("-created_at")  # Fetch all invoices
     module_actif = 'Gestion des Devis'  # Module actif à passer au template
 
     return render(request, 'devis/list_devis.html', {'devis': devis, 'module_actif': module_actif})
@@ -270,7 +263,7 @@ def generate_devis_number():
     last_devis = Devis.objects.order_by('id').last()
     if last_devis:
         return f"FCT-{last_devis.id + 1}"
-    return "FCT-1"  # First invoice
+    return "FCT-0001"  # First invoice
 
 
 
@@ -446,6 +439,8 @@ def transferer_devis_en_facture(request, devis_id):
 
 
 
+from django.http import JsonResponse
+
 def delete_deviss(request):
     if request.method == 'POST':
         selected_ids = request.POST.get('selected_devis', '')  # Récupérer les IDs
@@ -453,14 +448,14 @@ def delete_deviss(request):
             selected_ids_list = [int(id) for id in selected_ids.split(',')]
             print(f"Devis sélectionnés pour suppression (avant suppression) : {selected_ids_list}")  # Log des IDs reçus
             
-            # Suppression des devis sélectionnés
+            # Supprimer les devis sélectionnés
             devis_deleted, deleted_objects = Devis.objects.filter(id__in=selected_ids_list).delete()
             
-            # Obtenir uniquement le nombre de devis supprimés
+            # Obtenir le nombre de devis supprimés
             devis_count = deleted_objects.get('devis.Devis', 0)
             
             if devis_count > 0:
-                # Retourner le nombre de devis supprimés dans la réponse
+                # Retourner une réponse indiquant que la suppression a réussi
                 return JsonResponse({'status': 'success', 'message': f'{devis_count} devis supprimés avec succès.'})
             else:
                 return JsonResponse({'status': 'warning', 'message': "Aucun devis trouvé à supprimer."})
@@ -468,3 +463,193 @@ def delete_deviss(request):
             return JsonResponse({'status': 'warning', 'message': "Aucun devis sélectionné."})
     
     return JsonResponse({'status': 'error', 'message': "Méthode non autorisée."})
+
+
+
+
+def print_deviss(request):
+    # Récupérer les devis sélectionnés depuis la requête
+    devis_ids = request.POST.getlist('devis_ids')
+    print(devis_ids)
+
+    if not devis_ids:
+        return HttpResponse("Aucun devis sélectionné", status=400)
+
+    # Si les devis sont envoyés sous forme d'une seule chaîne de caractères séparée par des virgules
+    devis_ids = devis_ids[0].split(',')
+
+    # Convertir chaque ID en entier
+    devis_ids = [int(devis_id.strip()) for devis_id in devis_ids]
+
+    # Afficher les IDs pour vérifier qu'ils sont bien traités
+    print(devis_ids)
+
+    # Appeler la fonction generate_deviss_pdf avec les identifiants des devis
+    return generate_devis_pdf1(devis_ids)
+
+
+def generate_devis_pdf1(devis_ids):
+    print(f"devis_ids before passing: {devis_ids}")
+
+    # Créer la réponse HTTP avec un en-tête PDF
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="devis_selectionnes.pdf"'
+
+    # Créer le canvas PDF
+    pdf = canvas.Canvas(response, pagesize=letter)
+    width, height = letter
+    x = 50
+    initial_y = height - 50  # Position initiale pour le contenu
+
+    def draw_header():
+        nonlocal y
+        pdf.setFont("Helvetica-Bold", 16)
+        pdf.drawString(x, y, "Mohsen GHARBI GAMMOUDA Services")
+        pdf.setFont("Helvetica", 12)
+        pdf.drawString(x, y - 20, "20 Av. Habib Bourguiba, Sidi Bouzid")
+        pdf.drawString(x, y - 40, "Tel: 76 625 788 - 98 417 237")
+        pdf.drawString(x, y - 60, "Email: gmohsen6@gmail.com")
+        pdf.drawString(x, y - 80, "MF: 0421452S")
+        pdf.drawString(x, y - 100, "RIB: 4663")
+        y -= 160
+
+    def draw_footer(page_number):
+        pdf.setFont("Helvetica", 10)
+        pdf.drawString(width - 100, 30, f"Page {page_number}")
+
+    def draw_totals(total_ht, total_tva, total_ttc):
+        nonlocal y
+        pdf.setFont("Helvetica-Bold", 12)
+        y -= 10
+        pdf.drawString(x + 300, y, "Total HT:")
+        pdf.drawString(x + 370, y, f"{total_ht:.3f}")
+        y -= 20
+        pdf.drawString(x + 300, y, "Total TVA:")
+        pdf.drawString(x + 370, y, f"{total_tva:.3f}")
+        y -= 20
+        pdf.drawString(x + 300, y, "Total TTC:")
+        pdf.drawString(x + 370, y, f"{total_ttc:.3f}")
+
+    page_number = 1
+
+    for index, devis_id in enumerate(devis_ids):
+        # Réinitialiser y pour chaque devis
+        y = initial_y
+        devis = get_object_or_404(Devis, id=devis_id)  # Replace Facture with Devis model
+        ligne_devis = devis.lignes_devis.all()  # Replace lignes_facture with lignes_devis
+
+        tva_totals = {}
+
+        # Si ce n'est pas le premier devis, passer à une nouvelle page
+        if index > 0:
+            pdf.showPage()
+            page_number += 1
+
+        # Dessiner l'entête pour chaque devis
+        draw_header()
+        pdf.drawString(x, y, f"Devis No: {devis.numero_devis}")
+        pdf.drawString(x, y - 20, f"Date: {devis.date_devis.strftime('%d/%m/%Y')}")
+        pdf.drawString(x, y - 40, f"Client: {devis.client}")
+        y -= 80
+
+        pdf.setFont("Helvetica-Bold", 12)
+        pdf.drawString(x, y, "Article")
+        pdf.drawString(x + 150, y, "Qté")
+        pdf.drawString(x + 220, y, "P.U")
+        pdf.drawString(x + 300, y, "Rem %")
+        pdf.drawString(x + 350, y, "Net. HT")
+        pdf.drawString(x + 450, y, "TVA %")
+        pdf.line(x, y - 5, width - 50, y - 5)
+        y -= 25
+
+        pdf.setFont("Helvetica", 8)
+
+        total_ht, total_tva, total_ttc = Decimal('0'), Decimal('0'), Decimal('0')
+
+        for ligne in ligne_devis:
+            if y < 50:  # Si l'espace restant est insuffisant pour afficher une ligne
+                draw_footer(page_number)
+                pdf.showPage()
+                page_number += 1
+                y = initial_y
+                draw_header()
+
+            pdf.drawString(x, y, str(ligne.article))
+            pdf.drawString(x + 150, y, str(ligne.quantite))
+            pdf.drawString(x + 220, y, f"{ligne.prix_unitaire:.3f}")
+            pdf.drawString(x + 300, y, f"{ligne.taux_remise:.2f}%")
+            net_ht = ligne.quantite * ligne.prix_unitaire * (1 - ligne.taux_remise / 100)
+            total_ht += net_ht
+
+            tva_obj = ligne.article.tva
+            tva_amount = net_ht * tva_obj.taux_tva / 100
+            total_tva += tva_amount
+            total_ttc += net_ht + tva_amount
+
+            pdf.drawString(x + 350, y, f"{net_ht:.3f}")
+            pdf.drawString(x + 450, y, f"{tva_obj.taux_tva:.2f}%")
+            y -= 20
+
+            # Ajouter les totaux TVA par taux
+            rate = tva_obj.taux_tva
+            if rate not in tva_totals:
+                tva_totals[rate] = {'base': Decimal('0'), 'tva_amount': Decimal('0')}
+            tva_totals[rate]['base'] += net_ht
+            tva_totals[rate]['tva_amount'] += tva_amount
+
+        if y < 50:  # Changer de page si nécessaire
+            draw_footer(page_number)
+            pdf.showPage()
+            page_number += 1
+            y = initial_y
+            draw_header()
+
+        pdf.setFont("Helvetica-Bold", 12)
+        y -= 20
+        for rate, amounts in tva_totals.items():
+            pdf.drawString(x, y, f"TVA {rate}%:")
+            pdf.drawString(x + 150, y, f"Base: {amounts['base']:.3f}")
+            pdf.drawString(x + 300, y, f"Mont. TVA: {amounts['tva_amount']:.3f}")
+            y -= 20
+
+        # Affichage des totaux généraux pour le devis
+        draw_totals(total_ht, total_tva, total_ttc)
+
+    # Finaliser le PDF
+    pdf.save()
+    return response
+
+
+
+def devis_list_rechMultc(request):
+    devis = Devis.objects.all()
+    
+    # Vérifier si la recherche multicritère est demandée
+    show_search = request.GET.get('show_search', False)
+    
+    # Ajouter une logique pour filtrer les devis si nécessaire
+    field = request.GET.get('field', '')
+    operator = request.GET.get('operator', '')
+    value = request.GET.get('value', '')
+    range_min = request.GET.get('range_min', None)
+    range_max = request.GET.get('range_max', None)
+
+    if field and operator and value:
+        if operator == 'exact':
+            devis = devis.filter(**{f'{field}__exact': value})
+        elif operator == 'icontains':
+            devis = devis.filter(**{f'{field}__icontains': value})
+        elif operator == 'gt':
+            devis = devis.filter(**{f'{field}__gt': value})
+        elif operator == 'lt':
+            devis = devis.filter(**{f'{field}__lt': value})
+        elif operator == 'neq':
+            devis = devis.exclude(**{f'{field}__exact': value})
+        elif operator == 'lte':
+            devis = devis.filter(**{f'{field}__lte': value})
+        elif operator == 'gte':
+            devis = devis.filter(**{f'{field}__gte': value})
+        elif operator == 'range' and range_min and range_max:
+            devis = devis.filter(**{f'{field}__range': (range_min, range_max)})
+
+    return render(request, 'devis/list_devis.html', {'devis': devis, 'show_search': show_search})

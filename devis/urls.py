@@ -20,6 +20,9 @@ urlpatterns = [
     path('get-taux_tva/<int:article_id>/', views.get_taux_tva, name='get_taux_tva'),
     path('devis/<int:devis_id>/transferer_en_facture/', transferer_devis_en_facture, name='transferer_devis_en_facture'),
     path('devis/delete/', views.delete_deviss, name='delete_deviss'),
+    path('print/', views.print_deviss, name='print_deviss'),  # For printing selected invoices
+    path('search/', views.devis_list_rechMultc, name='devis_list_rechMultc'),
+
 
     # Add other paths as necessary
 ]

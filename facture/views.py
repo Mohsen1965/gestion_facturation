@@ -7,7 +7,6 @@ from django.http import JsonResponse
 from django.utils import timezone
 import logging
 from django.contrib import messages
-from decimal import Decimal
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from reportlab.lib.pagesizes import A4
@@ -15,19 +14,21 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from decimal import Decimal, InvalidOperation
 
-from django.shortcuts import get_object_or_404
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-from django.http import HttpResponse
+
+
+
 from decimal import Decimal
-from facture.models import Facture
-from tva.models import TVA
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from django.shortcuts import get_object_or_404
+from django.http import HttpResponse
+from reportlab.lib.utils import simpleSplit
 
 def generate_facture_pdf(request, facture_id):
     # Create the HttpResponse object with the PDF header
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="facture_{facture_id}.pdf"'
-    
+
     # Create the PDF
     pdf = canvas.Canvas(response, pagesize=letter)
     width, height = letter
@@ -118,21 +119,31 @@ def generate_facture_pdf(request, facture_id):
             y -= 25
             pdf.setFont("Helvetica", 8)
 
-        pdf.drawString(x, y, str(ligne.article))
+        # Handle multiline text for article description
+        article_text = str(ligne.article)
+        max_width = 150  # Adjust width for wrapping text
+        wrapped_text = simpleSplit(article_text, "Helvetica", 8, max_width)
+
+        # Draw article text on multiple lines
+        for line in wrapped_text:
+            pdf.drawString(x, y, line)
+            y -= 15
+
         pdf.drawString(x + 150, y, str(ligne.quantite))
         pdf.drawString(x + 220, y, f"{ligne.prix_unitaire:.3f}")
         pdf.drawString(x + 300, y, f"{ligne.taux_remise:.3f} %")
 
+
         # Calculate amounts
         total_ht = ligne.quantite * ligne.prix_unitaire * (1 - ligne.taux_remise / 100)
-        total_general_ht += total_ht
         tva_obj = get_object_or_404(TVA, id=ligne.article.tva_id)
         total_tva = total_ht * (tva_obj.taux_tva / 100)
+        total_general_ht += total_ht
         total_general_tva += total_tva
         total_ttc = total_ht + total_tva
         total_general_ttc += total_ttc
 
-        pdf.drawString(x + 350, y, f"{total_ht:.3f}")
+        pdf.drawRightString(x + 400, y, f"{total_ht:.3f}")
         pdf.drawString(x + 450, y, f"{tva_obj.taux_tva:.3f} %")
         pdf.line(x, y - 5, width - 50, y - 5)
         y -= 20
@@ -144,17 +155,17 @@ def generate_facture_pdf(request, facture_id):
         tva_totals[rate]['base'] += total_ht
         tva_totals[rate]['tva_amount'] += total_tva
 
-    # Display TVA by rate
     y -= 30
     pdf.setFont("Helvetica-Bold", 12)
-    pdf.drawString(x, y, "TVA Breakdown by Rate")
-    y -= 20
-
+    y -= 20 
     for rate, amounts in tva_totals.items():
-        pdf.drawString(x, y, f"Taux TVA {rate}%:")
+        pdf.drawString(x, y, f"TVA {rate}%:")
         pdf.drawString(x + 150, y, f"Base: {amounts['base']:.3f}")
         pdf.drawString(x + 300, y, f"Mont. TVA : {amounts['tva_amount']:.3f}")
         y -= 20
+
+    pdf.line(x, y + 10, width - 50, y + 10)
+    y -= 20
 
     if y < 100:
         draw_footer()
@@ -169,6 +180,9 @@ def generate_facture_pdf(request, facture_id):
     pdf.save()
 
     return response
+
+
+
 def get_article_data(request, article_id):
     try:
         article = Article.objects.get(pk=article_id)
@@ -193,7 +207,16 @@ import re
 
 def create_facture(request):
     if request.method == 'POST':
+        print("Submitted client:", request.POST.get("client"))  # Debugging the submitted client value
+
         data = request.POST.copy()
+
+        # Ensure 'client' field is correctly set
+        client_id = data.get("client")
+        if not client_id:
+            messages.error(request, "Client selection is required.")
+        else:
+            data["client"] = client_id
 
         # Set the total number of forms for the formset
         data['form-TOTAL_FORMS'] = data.getlist('form-TOTAL_FORMS')[0]
@@ -219,10 +242,10 @@ def create_facture(request):
                     facture.numero_facture = f"FCT-{new_number:04d}"
                 else:
                     # Default to FCT-1 if the format is not valid
-                    facture.numero_facture = "FCT-1"
+                    facture.numero_facture = "FCT-0001"
             else:
                 # Start from FCT-1 if no last_facture found
-                facture.numero_facture = "FCT-1"
+                facture.numero_facture = "FCT-0001"
 
             facture.save()  # Save the facture instance
 
@@ -235,6 +258,9 @@ def create_facture(request):
             messages.success(request, 'Invoice created successfully!')
             return redirect('list_factures')  # Redirect to the invoice list view
         else:
+            # Debug form errors
+            print("FactureForm Errors:", form.errors)
+            print("Formset Errors:", formset.errors)
             messages.error(request, 'Please correct the errors below.')
 
     else:
@@ -248,9 +274,9 @@ def create_facture(request):
     return render(request, 'facture/create_facture.html', context)
 
 
-
 def list_factures(request):
-    factures = Facture.objects.all()  # Fetch all invoices
+    factures = Facture.objects.all().order_by('-created_at')
+
     module_actif = 'Gestion des Factures'  # Module actif à passer au template
 
     return render(request, 'facture/list_factures.html', {'factures': factures, 'module_actif': module_actif})
@@ -275,7 +301,7 @@ def generate_facture_number():
     last_facture = Facture.objects.order_by('id').last()
     if last_facture:
         return f"FCT-{last_facture.id + 1}"
-    return "FCT-1"  # First invoice
+    return "FCT-0001"  # First invoice
 
 
 
@@ -332,9 +358,9 @@ def modifier_facture(request, facture_id):
         form = FactureForm(request.POST, instance=facture)
 
         if form.is_valid():
-            facture = form.save()
+            facture = form.save(commit=False)  # Ne pas sauvegarder immédiatement
 
-            # Process existing and new lines
+            # Process existing and new lines first
             total_lines = max(
                 int(key.split('-')[1]) + 1 for key in request.POST.keys() 
                 if key.startswith('form-') and '-article' in key
@@ -342,14 +368,13 @@ def modifier_facture(request, facture_id):
 
             lignes_gardees = set()
 
-            # Iterate over all lines submitted in the form
             for i in range(total_lines):
                 ligne_id = request.POST.get(f'form-{i}-id')
                 delete_flag = request.POST.get(f'form-{i}-DELETE', 'off')
 
                 if delete_flag == 'on' and ligne_id:
                     LigneFacture.objects.filter(id=ligne_id).delete()
-                    continue  # Skip further processing of this line
+                    continue
 
                 article_id = request.POST.get(f'form-{i}-article')
                 quantite = request.POST.get(f'form-{i}-quantite', 0)
@@ -357,32 +382,39 @@ def modifier_facture(request, facture_id):
                 prix_unitaire = safe_decimal(request.POST.get(f'form-{i}-prix_unitaire'), '0')
 
                 if article_id:
-                    if ligne_id:
-                        ligne = LigneFacture.objects.filter(id=ligne_id).first()
-                    else:
-                        ligne = LigneFacture(facture=facture)
+                    ligne = LigneFacture.objects.filter(id=ligne_id).first() if ligne_id else LigneFacture(facture=facture)
 
-                    # Update or create the line
                     ligne.article_id = article_id
                     ligne.quantite = int(quantite)
                     ligne.taux_remise = taux_remise_value
                     ligne.prix_unitaire = prix_unitaire
-
-                    # Calculate amounts
                     ligne.montant_ht = ligne.quantite * ligne.prix_unitaire * (1 - ligne.taux_remise / 100)
+
                     article = Article.objects.get(id=article_id)
                     ligne.ttva = safe_decimal(article.tva.taux_tva, '0')
                     ligne.montant_tva = ligne.montant_ht * ligne.ttva / 100
                     ligne.montant_ttc = ligne.montant_ht + ligne.montant_tva
-
                     ligne.save()
+
                     lignes_gardees.add(ligne.id)
+
+            # Recalcul des totaux après avoir traité les lignes
+            total_ht = sum(ligne.montant_ht for ligne in facture.lignes_facture.all())
+            total_tva = sum(ligne.montant_tva for ligne in facture.lignes_facture.all())
+            total_ttc = total_ht + total_tva
+
+            facture.total_ht = total_ht
+            facture.total_tva = total_tva
+            facture.total_ttc = total_ttc
+
+            # Sauvegarder la facture avec les totaux calculés
+            facture.save()
 
             messages.success(request, 'Facture modifiée avec succès !')
             return redirect('list_factures')
         else:
+            print("Erreurs du formulaire Facture:", form.errors)
             messages.error(request, 'Veuillez corriger les erreurs.')
-
     else:
         form = FactureForm(instance=facture)
 
@@ -399,20 +431,276 @@ def modifier_facture(request, facture_id):
 
 
 
+
+
 def delete_factures(request):
     if request.method == 'POST':
-        selected_ids = request.POST.get('selected_factures', '')  # Retrieve the string of IDs
-        print("Factures sélectionnées :", selected_ids)  # Debugging
-
+        selected_ids = request.POST.get('selected_factures', '')  # Récupérer les IDs
         if selected_ids:
-            # Split the string into a list of integers
             selected_ids_list = [int(id) for id in selected_ids.split(',')]
-
-            # Delete the selected factures
-            Facture.objects.filter(id__in=selected_ids_list).delete()
-
-            return JsonResponse({'status': 'success', 'message': f"{len(selected_ids_list)} facture(s) supprimée(s)."})
+            print(f"Factures sélectionnées pour suppression (avant suppression) : {selected_ids_list}")  # Log des IDs reçus
+            
+            # Suppression des factures sélectionnées
+            factures_deleted, deleted_objects = Facture.objects.filter(id__in=selected_ids_list).delete()
+            
+            # Obtenir uniquement le nombre de factures supprimées
+            factures_count = deleted_objects.get('facture.Facture', 0)
+            
+            if factures_count > 0:
+                # Retourner le nombre de factures supprimées dans la réponse
+                return JsonResponse({'status': 'success', 'message': f'{factures_count} factures supprimées avec succès.'})
+            else:
+                return JsonResponse({'status': 'warning', 'message': "Aucune facture trouvée à supprimer."})
         else:
             return JsonResponse({'status': 'warning', 'message': "Aucune facture sélectionnée."})
-
+    
     return JsonResponse({'status': 'error', 'message': "Méthode non autorisée."})
+
+    
+def print_factures(request):
+    if request.method == "POST":
+        facture_ids = request.POST.get('facture_ids', '')
+
+        if not facture_ids:
+            return JsonResponse({"status": "error", "message": "Aucun ID de facture sélectionné"}, status=400)
+
+        facture_ids = [int(id.strip()) for id in facture_ids.split(',') if id.isdigit()]
+
+        print("IDs des factures reçus sur le serveur :", facture_ids)
+
+        return generate_factures_pdf1(facture_ids)
+
+    return JsonResponse({"status": "error", "message": "Requête incorrecte"}, status=400)
+
+
+def generate_factures_pdf1(facture_ids):
+    print(f"facture_ids before passing: {facture_ids}")
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="factures_selectionnees.pdf"'
+
+    pdf = canvas.Canvas(response, pagesize=letter)
+    width, height = letter
+    x = 50
+    initial_y = height - 50
+
+    def draw_header():
+        nonlocal y
+        pdf.setFont("Helvetica-Bold", 16)
+        pdf.drawString(x, y, "Mohsen GHARBI GAMMOUDA Services")
+        pdf.setFont("Helvetica", 12)
+        pdf.drawString(x, y - 20, "20 Av. Habib Bourguiba, Sidi Bouzid")
+        pdf.drawString(x, y - 40, "Tel: 76 625 788 - 98 417 237")
+        pdf.drawString(x, y - 60, "Email: gmohsen6@gmail.com")
+        pdf.drawString(x, y - 80, "MF: 0421452S")
+        pdf.drawString(x, y - 100, "RIB: 4663")
+        y -= 160
+
+    def draw_footer(page_number):
+        pdf.setFont("Helvetica", 10)
+        pdf.drawString(width - 100, 30, f"Page {page_number}")
+
+    def draw_totals(total_ht, total_tva, total_ttc):
+        nonlocal y
+        pdf.setFont("Helvetica-Bold", 12)
+        y -= 10
+        pdf.drawString(x + 300, y, "Total HT:")
+        pdf.drawString(x + 370, y, f"{total_ht:.3f}")
+        y -= 20
+        pdf.drawString(x + 300, y, "Total TVA:")
+        pdf.drawString(x + 370, y, f"{total_tva:.3f}")
+        y -= 20
+        pdf.drawString(x + 300, y, "Total TTC:")
+        pdf.drawString(x + 370, y, f"{total_ttc:.3f}")
+
+    page_number = 1
+
+    for index, facture_id in enumerate(facture_ids):
+        y = initial_y
+        facture = get_object_or_404(Facture, id=facture_id)
+        ligne_factures = facture.lignes_facture.all()
+
+        tva_totals = {}
+
+        if index > 0:
+            pdf.showPage()
+            page_number += 1
+
+        draw_header()
+        pdf.drawString(x, y, f"Facture No: {facture.numero_facture}")
+        pdf.drawString(x, y - 20, f"Date: {facture.date_facture.strftime('%d/%m/%Y')}")
+        pdf.drawString(x, y - 40, f"Client: {facture.client}")
+        y -= 80
+
+        pdf.setFont("Helvetica-Bold", 12)
+        pdf.drawString(x, y, "Article")
+        pdf.drawString(x + 150, y, "Qté")
+        pdf.drawString(x + 220, y, "P.U")
+        pdf.drawString(x + 300, y, "Rem %")
+        pdf.drawString(x + 350, y, "Net. HT")
+        pdf.drawString(x + 450, y, "TVA %")
+        pdf.line(x, y - 5, width - 50, y - 5)
+        y -= 25
+
+        pdf.setFont("Helvetica", 8)
+        total_ht, total_tva, total_ttc = Decimal('0'), Decimal('0'), Decimal('0')
+
+        for ligne in ligne_factures:
+            if y < 50:
+                draw_footer(page_number)
+                pdf.showPage()
+                page_number += 1
+                y = initial_y
+                draw_header()
+
+            article_text = str(ligne.article)
+            wrapped_text = simpleSplit(article_text, "Helvetica", 8, width - x - 450)
+
+            for line in wrapped_text:
+                pdf.drawString(x, y, line)
+                y -= 12
+
+            pdf.drawString(x + 150, y, str(ligne.quantite))
+            pdf.drawString(x + 220, y, f"{ligne.prix_unitaire:.3f}")
+            pdf.drawString(x + 300, y, f"{ligne.taux_remise:.2f}%")
+
+            pdf.line(x, y - 5, width - 50, y - 5)
+
+
+            net_ht = ligne.quantite * ligne.prix_unitaire * (1 - ligne.taux_remise / 100)
+            total_ht += net_ht
+
+            tva_obj = ligne.article.tva
+            tva_amount = net_ht * tva_obj.taux_tva / 100
+            total_tva += tva_amount
+            total_ttc += net_ht + tva_amount
+
+            pdf.drawString(x + 350, y, f"{net_ht:.3f}")
+            pdf.drawString(x + 450, y, f"{tva_obj.taux_tva:.2f}%")
+            y -= 20
+
+            rate = tva_obj.taux_tva
+            if rate not in tva_totals:
+                tva_totals[rate] = {'base': Decimal('0'), 'tva_amount': Decimal('0')}
+            tva_totals[rate]['base'] += net_ht
+            tva_totals[rate]['tva_amount'] += tva_amount
+
+        if y < 50:
+            draw_footer(page_number)
+            pdf.showPage()
+            page_number += 1
+            y = initial_y
+            draw_header()
+
+        pdf.setFont("Helvetica-Bold", 12)
+        y -= 20
+        for rate, amounts in tva_totals.items():
+            pdf.drawString(x, y, f"TVA {rate}%:")
+            pdf.drawString(x + 150, y, f"Base: {amounts['base']:.3f}")
+            pdf.drawString(x + 300, y, f"Mont. TVA: {amounts['tva_amount']:.3f}")
+            pdf.line(x, y - 2, width - 50, y - 2)
+
+            y -= 20
+
+        draw_totals(total_ht, total_tva, total_ttc)
+
+    pdf.save()
+    return response
+
+
+
+from datetime import datetime
+from django.db.models import Q
+from django.shortcuts import render
+from .models import Facture
+
+from datetime import datetime
+from django.db.models import Q
+from django.shortcuts import render
+from .models import Facture
+
+def list_facture_rechMultc(request):
+    factures = Facture.objects.all().order_by("-created_at")
+
+    # Récupération des paramètres de recherche
+    show_search = request.GET.get('show_search', False)
+    field = request.GET.get('field', '')
+    operator = request.GET.get('operator', '')
+    value = request.GET.get('value', '')
+    field2 = request.GET.get('field2', '')
+    operator2 = request.GET.get('operator2', '')
+    value2 = request.GET.get('value2', '')
+    logical_operator = request.GET.get('logical_operator', 'and')  # Par défaut 'and'
+
+    # Initialisation des filtres
+    query1 = Q()
+    query2 = Q()
+
+    # Fonction utilitaire pour convertir une date au format français
+    def convert_french_date(date_str):
+        try:
+            return datetime.strptime(date_str, '%d/%m/%Y').date()
+        except ValueError:
+            return None  # Retourne None si le format est invalide
+
+    # Fonction utilitaire pour construire les Q objects
+    def construct_query(field, operator, value):
+        if operator == 'exact':
+            return Q(**{f"{field}__exact": value})
+        elif operator == 'icontains':
+            return Q(**{f"{field}__icontains": value})
+        elif operator == 'gt':
+            return Q(**{f"{field}__gt": value})
+        elif operator == 'lt':
+            return Q(**{f"{field}__lt": value})
+        elif operator == 'gte':
+            return Q(**{f"{field}__gte": value})
+        elif operator == 'lte':
+            return Q(**{f"{field}__lte": value})
+        return Q()  # Retourne un Q vide si l'opérateur est invalide
+
+    # Adapter les noms de champs pour inclure les relations
+    def adjust_field_name(field):
+        if field == 'compte':  # Champ `compte` se trouve dans le modèle Client
+            return 'client__compte'
+        return field  # Aucun changement pour les autres champs
+
+    # Ajustement des noms de champs
+    field = adjust_field_name(field)
+    field2 = adjust_field_name(field2)
+
+    # Construction du premier critère
+    if field and operator and value:
+        if field == 'date_facture':  # Conversion nécessaire pour les dates
+            date_value = convert_french_date(value)
+            if date_value:
+                query1 = construct_query(field, operator, date_value)
+        else:
+            query1 = construct_query(field, operator, value)
+
+    # Construction du deuxième critère
+    if field2 and operator2 and value2:
+        if field2 == 'date_facture':  # Conversion nécessaire pour les dates
+            date_value2 = convert_french_date(value2)
+            if date_value2:
+                query2 = construct_query(field2, operator2, date_value2)
+        else:
+            query2 = construct_query(field2, operator2, value2)
+
+    # Combinaison des deux critères avec l'opérateur logique
+    if logical_operator == 'and':
+        final_query = query1 & query2
+    elif logical_operator == 'or':
+        final_query = query1 | query2
+    else:
+        final_query = query1  # Si opérateur logique invalide
+
+    # Appliquer le filtre final
+    factures = factures.filter(final_query)
+
+    # Contexte pour le rendu
+    context = {
+        'factures': factures,
+        'show_search': show_search,
+    }
+    return render(request, 'facture/list_factures.html', context)

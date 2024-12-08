@@ -17,7 +17,11 @@ urlpatterns = [
     path('create/', views.create_facture, name='create_facture'),  # Path for creating an invoice
     path('get-prix-unitaire/<int:article_id>/', views.get_prix_unitaire, name='get_prix_unitaire'),
     path('get-taux_tva/<int:article_id>/', views.get_taux_tva, name='get_taux_tva'),
-    path('delete_selected/', views.delete_factures, name='delete_factures'),
+    path('facture/delete/', views.delete_factures, name='delete_factures'),
+    path('print/', views.print_factures, name='print_factures'),  # For printing selected invoices
+    path('search/', views.list_facture_rechMultc, name='list_facture_rechMultc'),
+
+    
 
     # Add other paths as necessary
 ]

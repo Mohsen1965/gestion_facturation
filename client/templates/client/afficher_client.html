@@ -5,10 +5,40 @@
 {% block content %}
 <div class="container mt-5">
     <h2 style="color:rgb(6, 125, 146)" class="font-weight-bold">Détails du Client : {{ client.nom }}</h2>
+    
     <p><strong>Code Client :</strong> {{ client.code_client }}</p>
-    <p><strong>Adresse :</strong> {{ client.adresse }}</p>
+    
+    {% if client.adresse %}
+        <p><strong>Adresse :</strong> {{ client.adresse }}</p>
+    {% else %}
+        <p><strong>Adresse :</strong> Non spécifiée</p>
+    {% endif %}
+
     <p><strong>Email :</strong> {{ client.email }}</p>
-    <p><strong>Téléphone :</strong> {{ client.telephone }}</p>
+    
+    {% if client.telephone %}
+        <p><strong>Téléphone :</strong> {{ client.telephone }}</p>
+    {% else %}
+        <p><strong>Téléphone :</strong> Non spécifié</p>
+    {% endif %}
+    
+    {% if client.ville %}
+        <p><strong>Ville :</strong> {{ client.ville }}</p>
+    {% else %}
+        <p><strong>Ville :</strong> Non spécifiée</p>
+    {% endif %}
+    
+    {% if client.compte %}
+        <p><strong>Compte :</strong> {{ client.compte }}</p>
+    {% else %}
+        <p><strong>Compte :</strong> Non spécifié</p>
+    {% endif %}
+    
+    {% if client.matricule_fiscal %}
+        <p><strong>Matricule Fiscal :</strong> {{ client.matricule_fiscal }}</p>
+    {% else %}
+        <p><strong>Matricule Fiscal :</strong> Non spécifié</p>
+    {% endif %}
 
     <a href="{% url 'list_clients' %}" class="btn btn-danger">Retour à la liste des clients</a>
 </div>

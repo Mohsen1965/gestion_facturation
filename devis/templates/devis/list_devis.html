@@ -3,24 +3,93 @@
 {% block title %}Liste des Devis{% endblock %}
 
 {% block content %}
+<h1 style="text-align: center; margin-bottom: 5px;">Liste des Devis</h1>
+<hr style="border: 1px solid black; width: 100%; margin-bottom: 5px;">
+
+{% if show_search %}
+<!-- Formulaire de recherche avec cadre à angles arrondis -->
+<div style="background-color: #f9f9f9; padding: 5px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); width: 100%; margin: 0 auto;">
+    <h3 style="text-align: left; font-size: 14px; font-weight: bold; color: red; margin-bottom: 5px;">Recherche Multicritère</h3>
+    <form method="GET" action="{% url 'devis_list_rechMultc' %}" class="mb-3">
+        <div class="row d-flex align-items-center">
+            <div class="col-md-3" style="margin-bottom: 15px;">
+                <label for="field" class="form-label">Champ</label>
+                <select name="field" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;">
+                    <option value="numero_devis">Numéro de Devis</option>
+                    <option value="date_devis">Date de Devis</option>
+                    <option value="client__nom">Client</option>
+                    <option value="total_ht">Total HT</option>
+                    <option value="total_tva">Total TVA</option>
+                    <option value="total_ttc">Total TTC</option>
+                    <option value="etat">État</option>
+                </select>
+            </div>
+            <div class="col-md-3" style="margin-bottom: 15px;">
+                <label for="operator" class="form-label">Opérateur</label>
+                <select name="operator" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;">
+                    <option value="exact">Égal à</option>
+                    <option value="icontains">Contient</option>
+                    <option value="gt">Supérieur à</option>
+                    <option value="lt">Inférieur à</option>
+                    <option value="neq">Différent de</option>
+                    <option value="lte">Inférieur ou égal à</option>
+                    <option value="gte">Supérieur ou égal à</option>
+                    <option value="range">Valeur comprise entre</option>
+                </select>
+            </div>
+            <div class="col-md-3" style="margin-bottom: 15px;">
+                <label for="value" class="form-label">Valeur</label>
+                <input type="text" name="value" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;" />
+                <div id="range-inputs" style="display: none;">
+                    <input type="number" name="range_min" placeholder="Borne inférieure" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;">
+                    <input type="number" name="range_max" placeholder="Borne supérieure" class="form-control" style="border-radius: 8px; border: 1px solid #ccc; padding: 10px;">
+                </div>
+            </div>
+            <div class="col-md-3" style="margin-bottom: 15px;">
+                <button type="submit" class="btn btn-success mt-4" style="background-color: #007bff; border: none; padding: 10px 20px; font-size: 16px; cursor: pointer;">
+                    <i class="fas fa-search"></i> Rechercher
+                </button>
+            </div>
+        </div>
+        <input type="hidden" name="show_search" value="true">
+    </form>
+    
+    <hr style="border: 1px solid black; width: 100%; margin-bottom: 5px;">
+
+</div>
+{% endif %}
 
 <!-- Bouton pour ouvrir le formulaire d'ajout de devis -->
-<a href="{% url 'create_devis' %}" class="btn btn-primary mb-3 btn-icon">
-    <i class="fas fa-plus"></i> Devis
-</a>
+<div style="display: inline-flex; align-items: center; gap: 2px;">
+    <a href="{% url 'list_devis' %}" class="btn btn-secondary mb-3 btn-icon" style="margin-left: 2px; background-color: #955251;">
+        <i class="fas fa-sync-alt"></i>
+    </a>    
+    <a href="{% url 'create_devis' %}" class="btn btn-primary mb-3 btn-icon" style="margin-left: 2px;">
+        <i class="fas fa-plus"></i> Devis
+    </a>
+    <form id="deleteSelectedForm" method="POST" action="{% url 'delete_deviss' %}" style="display: inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn mb-3 btn-icon" style=" background-color: #e70909; color: white;">
+            <i class="fas fa-trash"></i> <i class="fa-solid fa-check"></i>
+        </button>
+        </button>
+        <!-- Bouton pour imprimer les factures sélectionnées -->
 
-<!-- Formulaire de suppression des devis sélectionnés -->
-<form id="deleteSelectedForm" method="POST" action="{% url 'delete_deviss' %}" style="display: inline;">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-danger mb-3 btn-icon">
-        <i class="fas fa-trash"></i> Supprimer Sélectionnées
-    </button>
-    <input type="hidden" id="selectedDevis" name="selected_devis">
-</form>
+        <input type="hidden" id="selected_devis" name="selected_devis">
+    </form>
+    <form id="printSelectedForm" method="post" action="{% url 'print_deviss' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn mb-3 btn-icon" Style="background-color:#239B56; color: white;">
+            <i class="fas fa-print"></i> <i class="fa-solid fa-check"></i>
+        </button>
+        <input type="hidden" id="devis_ids" name="devis_ids">
+    </form>
+
+</div>
 
 <div class="table-responsive" style="font-size: 8pt; font-family: Verdana, sans-serif;">
-    <table id="devisTable" class="table table-striped" style="border-collapse: collapse; width: 100%;">
-        <thead style="background-color:green; color: #FFFFFF; font-size: 12pt; font-weight: bold;">
+    <table id="devisTable" class="table table-striped" style="font-size: 11px; border-collapse: collapse; width: 100%;">
+        <thead style="background-color:#581845; color: #FFFFFF; font-size: 11pt; font-weight: bold;">
             <tr>
                 <th style="padding: 5px; height: 40px; width: 30px;">
                     <input type="checkbox" id="selectAll" title="Tout sélectionner" />
@@ -81,7 +150,47 @@
 </div>
 
 <script>
-    // Gestion de la case à cocher "Tout sélectionner" pour les devis
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialize DataTable
+        $('#devisTable').DataTable({
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    text: '<i class="fas fa-file-excel" style="font-size: 20px; color: green;"></i>',
+                    exportOptions: { columns: [0, 1, 2, 3, 4] }  // Mettez à jour les colonnes en fonction de celles de vos catégories
+                },
+                {
+                    extend: 'pdfHtml5',
+                    text: '<i class="fas fa-file-pdf" style="font-size: 20px; color: red;"></i>',
+                    exportOptions: { columns: [0, 1, 2, 3, 4] }
+                },
+                {
+                    extend: 'print',
+                    text: '<i class="fas fa-print" style="font-size: 20px; color: blue;"></i>',
+                    title: 'Liste des Catégories',
+                    customize: function(win) {
+                        $(win.document.body).find('table').addClass('display').css('font-size', '12px');
+                        $(win.document.body).find('table tr:last-child td').remove(); // Supprimer la colonne actions
+                    }
+                }
+            ],
+            initComplete: function() {
+                $('#searchInput').on('keyup', function() {
+                    table.search(this.value).draw();
+                });
+            },
+            language: {
+            url: "/static/js/lang/French.json"
+        },
+            //order: [[1, 'asc']], // Trier par No par défaut
+            columnDefs: [
+                { orderable: false, targets: -1 } // Désactiver le tri sur la colonne "Actions"
+            ]
+        });
+    });
+    
+    // Gestion de la case à cocher "Tout sélectionner" pour les catégories
     document.getElementById('selectAll').addEventListener('change', function () {
         const isChecked = this.checked;
         const checkboxes = document.querySelectorAll('input[name="selected_devis"]');
@@ -91,23 +200,25 @@
     });
     
     document.addEventListener('DOMContentLoaded', function () {
-        const deleteForm = document.getElementById('deleteSelectedForm');
-        
-        // Suppression des devis sélectionnés (plusieurs devis)
-        deleteForm.addEventListener('submit', function (event) {
-            event.preventDefault();  // Empêche l'envoi par défaut du formulaire
-            
-            const selected = Array.from(document.querySelectorAll('input[name="selected_devis"]:checked'))
-                .map(checkbox => checkbox.value);  // Récupère les IDs des devis sélectionnés
+    const deleteForm = document.getElementById('deleteSelectedForm');
     
-            if (selected.length === 0) {
-                alert('Veuillez sélectionner au moins un devis.');
-                return;
-            }
-    
+    // Suppression des devis sélectionnés (plusieurs devis)
+    deleteForm.addEventListener('submit', function (event) {
+        event.preventDefault();  // Empêche l'envoi par défaut du formulaire
+
+        const selected = Array.from(document.querySelectorAll('input[name="selected_devis"]:checked'))
+            .map(checkbox => checkbox.value);  // Récupère les IDs des devis sélectionnés
+
+        if (selected.length === 0) {
+            alert('Veuillez sélectionner au moins un devis.');
+            return;
+        }
+
+        // Confirmation avant suppression des devis sélectionnés
+        if (confirm("Êtes-vous sûr de vouloir supprimer les devis sélectionnés ?")) {
             // Définit la valeur du champ caché avec la liste des IDs des devis
-            document.getElementById('selectedDevis').value = selected.join(',');
-    
+            document.getElementById('selected_devis').value = selected.join(',');
+
             // Envoi de la requête POST avec Fetch API
             fetch(deleteForm.action, {
                 method: 'POST',
@@ -130,55 +241,121 @@
                 alert('Une erreur est survenue. Veuillez réessayer.');
                 console.error('Erreur:', error);
             });
-        });
-    
-        // Suppression d'un seul devis via le bouton "delete-btn"
-        const deleteButtons = document.querySelectorAll('.delete-btn');
-        deleteButtons.forEach(button => {
-            button.addEventListener('click', function () {
-                const selectedId = this.dataset.id;  // Récupère l'ID du devis
-    
-                if (confirm("Êtes-vous sûr de vouloir supprimer ce devis ?")) {
-                    fetch('/devis/delete/', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': getCookie('csrftoken'), // CSRF token pour la requête sécurisée
-                        },
-                        body: JSON.stringify({ selected_devis: selectedId })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            alert(data.message);
-                            window.location.href = '/devis/';  // Redirige vers la page de la liste des devis
-                        } else {
-                            alert(data.message);
-                        }
-                    })
-                    .catch(error => console.error('Erreur:', error));
-                }
-            });
-        });
-    
-        // Fonction pour obtenir le CSRF token
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
         }
     });
-</script>
 
+    // Suppression d'un seul devis via le bouton "delete-btn"
+    const deleteButtons = document.querySelectorAll('.delete-btn');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function () {
+            const selectedId = this.dataset.id;  // Récupère l'ID du devis
+
+            // Confirmation avant suppression d'un seul devis
+            if (confirm("Êtes-vous sûr de vouloir supprimer ce devis ?")) {
+                fetch('/devis/delete/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'), // CSRF token pour la requête sécurisée
+                    },
+                    body: JSON.stringify({ selected_devis: selectedId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert(data.message);
+                        window.location.href = '/devis/';  // Redirige vers la page de la liste des devis
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => console.error('Erreur:', error));
+            }
+        });
+    });
+
+    // Fonction pour obtenir le CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+
+
+// === Impression des devis sélectionnés ===
+document.getElementById('printSelectedForm').addEventListener('submit', function (event) {
+    event.preventDefault();
+
+    const selected = Array.from(document.querySelectorAll('input[name="selected_devis"]:checked'))
+        .map(checkbox => checkbox.value);
+
+    if (selected.length === 0) {
+        alert('Veuillez sélectionner au moins un devis.');
+        return;
+    }
+
+    if (confirm("Êtes-vous sûr de vouloir imprimer les devis sélectionnés ?")) {
+        // Mise à jour du champ caché 'devis_ids' avec les valeurs sélectionnées
+        document.getElementById('devis_ids').value = selected.join(',');
+
+        // Référencer le formulaire avec 'printSelectedForm'
+        const printForm = document.getElementById('printSelectedForm');
+
+        // Soumettre le formulaire via fetch
+        fetch(printForm.action, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: new URLSearchParams(new FormData(printForm)).toString()
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.blob(); // Expecting a PDF blob
+            }
+            throw new Error('Erreur lors de la génération du PDF');
+        })
+        .then(pdfBlob => {
+            // Create a URL for the PDF and trigger a download
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(pdfBlob);
+            link.download = 'devis_selectionnes.pdf'; // Specify the filename for the PDF
+            link.click();
+        })
+        .catch(error => {
+            alert('Une erreur est survenue. Veuillez réessayer.');
+            console.error('Erreur:', error);
+        });
+    }
+});
+
+
+const selectOperator = document.querySelector('select[name="operator"]');
+    const rangeInputs = document.getElementById('range-inputs');
+
+    selectOperator.addEventListener('change', () => {
+        if (selectOperator.value === 'range') {
+            rangeInputs.style.display = 'block';
+        } else {
+            rangeInputs.style.display = 'none';
+        }
+    });
+
+
+
+    </script>
+    
     
 
 {% endblock %}

@@ -5,6 +5,8 @@ from django.utils import timezone
 from tva.models import TVA
 from decimal import Decimal
 from decimal import InvalidOperation
+from django.utils.timezone import now
+
 
 class Facture(models.Model):
     numero_facture = models.CharField(max_length=100)
@@ -18,6 +20,7 @@ class Facture(models.Model):
         ('payee', 'Payée'),      # Option 2
     ]
     etat = models.CharField(max_length=20, choices=STATUTS, default='impayée')
+    created_at = models.DateTimeField(default=now, editable=False)  # Ajout du champ
 
     def __str__(self):
         return f"Facture {self.numero_facture} - {self.client}"
